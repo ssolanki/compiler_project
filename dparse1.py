@@ -7,7 +7,9 @@ tokens = dlex.tokens
 def p_startProgram(t):
     ''' Program : LIST_OF_DECLARATIONS
                 '''
-    t[0] = t[1]
+
+    t[0] = {'TYPE':'startProgram','CHILD':t[1]}                
+#    t[0] = t[1]
     #print t[0]
 
 def p_LIST_OF_DECLARATIONS(t):
@@ -70,7 +72,26 @@ def p_FUNCTION_DEF(t):
                             | IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
                             
                             '''
-    t[0] = (t[1],t[2],t[4])
+    # t[0] = (t[1],t[2],t[4])
+    global FUNCTION_PROTOTYPE_DECLARATION
+    global functions
+    global parametersymboltable
+    #sys.call()
+    if(len(t) == 7 ):
+        t[0] = {'NODE_TYPE':'function_defination', 'OUTPUT':t[1]['TYPE'], 'INPUT': t[4], 'IDENTIFIER': t[2],'partProgram': ''}
+        currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
+        functions = functions + [currentfunction]
+        CURRENT_DECLARATION = [{"NAME":t[2],"INPUT":t[4],"OUTPUT":t[1]['TYPE']}]
+        FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+        parametersymboltable = SymbolTable(-1)
+    elif(len(t) == 6 ):
+        t[0] = {'NODE_TYPE':'function_defination', 'OUTPUT':'VOID', 'INPUT': t[3], 'IDENTIFIER': t[1],'partProgram': ''}
+        currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
+        functions = functions + [currentfunction]
+        CURRENT_DECLARATION = [{"NAME":t[1],"INPUT":t[3],"OUTPUT":'VOID'}]
+        FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+        parametersymboltable = SymbolTable(-1)
+    print t[0]    
 
 
 def p_PARAMETERS(t):
@@ -88,13 +109,13 @@ def p_LIST_OF_PARAMETERS (t):
                     | PARAMETER_TYPE
                     '''
 
-    # global parametersymboltable
+    global parametersymboltable
     if(len(t) == 4):
         t[0] = t[1] + [t[3]]
-        # parametersymboltable.insert(t[3]['IDENTIFIER'],{'TYPE':t[3]['TYPE'],'ARRAY':t[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
+        parametersymboltable.insert(t[3]['IDENTIFIER'],{'TYPE':t[3]['TYPE'],'ARRAY':t[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
     else:
         t[0] =  [t[1]]
-        # parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
+        parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
     
 def p_PARAMETER_TYPE (t):
     ''' PARAMETER_TYPE : VARIABLE_TYPE IDENTIFIER
@@ -105,14 +126,14 @@ def p_PARAMETER_TYPE (t):
                         | IMMUTABLE VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER 
                         
                         '''
-    t[0] = (t[2], t[1])
-    
+    t[0] = {'NODE_TYPE': 'param_type_node', 'TYPE': t[1]['TYPE'], 'ARRAY': t[2]['ARRAY'],'IDENTIFIER': t[2]['IDENTIFIER']}
 
+    # t[0] = (t[2], t[1])
+    # if (len(t) == 2):
+    #     t[0] = t[1]
+    # else:
+    #     t[0] = t[1]
 
-    if (len(t) == 2):
-        t[0] = t[1]
-    else:
-        t[0] = t[1]
 # ---------------------------------------------------------------------------------------------
 
 def p_FUNCTION_DECL(t):
@@ -124,8 +145,46 @@ def p_FUNCTION_DECL(t):
                             | AUTO IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT   
                             | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR STATEMENT  
                             '''
-    t[0] = (t[5])
-    print (t[6])
+
+        global FUNCTION_PROTOTYPE_DECLARATION
+    global functions
+    global parametersymboltable
+    #sys.call()
+    if(len(t) == 7 ):
+        t[0] = {'NODE_TYPE':'function_declaration', 'OUTPUT':t[1]['TYPE'], 'INPUT': t[4], 'IDENTIFIER': t[2],'partProgram': t[6]}
+        flag = 0
+        for func in FUNCTION_PROTOTYPE_DECLARATION :
+                #print t[2]
+                if(t[2] in func['NAME'] or t[2] == 'main'):
+                    flag=1
+                    func['partProgram'] = t[6]
+                    break
+        if(flag != 1):
+            print "function definition missing for ",t[2]
+            currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
+            functions = functions + [currentfunction]
+            CURRENT_DECLARATION = [{"NAME":t[2],"INPUT":t[4],"OUTPUT":t[1]['TYPE']}]
+            FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+            
+    elif(len(t) == 6 ):
+        t[0] = {'NODE_TYPE':'function_declaration', 'OUTPUT':'VOID', 'INPUT': t[3], 'IDENTIFIER': t[1],'partProgram': t[5]}
+        flag = 0
+        for func in FUNCTION_PROTOTYPE_DECLARATION :
+                if(t[1] in func['NAME'] or t[1] == 'main'):
+                    flag=1
+                    func['partProgram'] = t[5]
+                    break
+        if(flag != 1):
+            print "function definition missing for ",t[2]
+            currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
+            functions = functions + [currentfunction]
+            CURRENT_DECLARATION = [{"NAME":t[1],"INPUT":t[3],"OUTPUT":'VOID'}]
+            FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+            parametersymboltable = SymbolTable(-1)
+    print t[0]       
+
+    # t[0] = (t[5])
+    # print (t[6])
     # print 'function declaration'
 
 def p_STATEMENT(t):
@@ -166,33 +225,43 @@ def p_PROG_LOCAL_DECLS(t):
 
           
 def p_SCOPED_VARIABLE_DECL(t):
-    ''' SCOPED_VARIABLE_DECL : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
+    ''' SCOPED_VARIABLE_DECL : SCOPED_VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
                                '''
     t[0] = t[1]     
-    # t[0]={'NODE_TYPE':'scoped_var_declaration','STATIC':t[1]['STATIC'],'VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
+    t[0]={'NODE_TYPE':'scoped_var_declaration','STATIC':t[1]['STATIC'],'VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
 
-    # table = 'LOCAL'
-    # initialise = ''
-    # if(t[1]['TYPE'] == 'float'):
-    #     table = 'GLOBAL'
-    #     initialise = {'TYPE': 'float', 'NODE_TYPE': 'expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'simple_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'and_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'sum_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'term', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_expression', 'OP': '', 'EXPRESSION': {'SUBTYPE': 'immutable', 'NODE_TYPE': 'factor', 'EXPRESSION': {'SUBTYPE': 'Constant', 'NODE_TYPE': 'immutable', 'TYPE': 'float', 'VALUE': '0.0'}, 'TYPE': 'float'}, 'factor': 1}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OPS': ''}
-    # for x in t[2]:
-    #     if (currentSymbolTable.insert(x['ID'],{'TYPE':t[1]['TYPE'],'STATIC':t[1]['STATIC'],'ARRAY': x['ARRAY'],'INDEX1':x['INDEX1'],'INDEX2':x['INDEX2'],'SCOPETYPE':table}) == False):
-    #         print x['ID'],': Variable already declared '
-    #         sys.exit()
-    #     else:
-    #         x['SCOPETYPE'] = 'LOCAL'
-    #         check = currentSymbolTable.lookupCurrentTable(x['ID'])
-    #         #print check
-    #         x['offset'] = check['offset']
-    #         x['TABLE'] = check['TABLE']
-    #         x['TYPE'] = t[1]['TYPE']
-    #         x['STATIC'] = t[1]['STATIC']
-    #         if (x['INITIALISED'] == ''):
-    #             x['INITIALISED'] = initialise
-            #print x['offset']
+    table = 'LOCAL'
+    initialise = ''
+    if(t[1]['TYPE'] == 'float'):
+        table = 'GLOBAL'
+        initialise = {'TYPE': 'float', 'NODE_TYPE': 'expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'simple_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'and_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'sum_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'term', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_expression', 'OP': '', 'EXPRESSION': {'SUBTYPE': 'immutable', 'NODE_TYPE': 'factor', 'EXPRESSION': {'SUBTYPE': 'Constant', 'NODE_TYPE': 'immutable', 'TYPE': 'float', 'VALUE': '0.0'}, 'TYPE': 'float'}, 'factor': 1}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OPS': ''}
+    for x in t[2]:
+        if (currentSymbolTable.insert(x['ID'],{'TYPE':t[1]['TYPE'],'STATIC':t[1]['STATIC'],'ARRAY': x['ARRAY'],'INDEX1':x['INDEX1'],'INDEX2':x['INDEX2'],'SCOPETYPE':table}) == False):
+            print x['ID'],': Variable already declared '
+            sys.exit()
+        else:
+            x['SCOPETYPE'] = 'LOCAL'
+            check = currentSymbolTable.lookupCurrentTable(x['ID'])
+            #print check
+            x['offset'] = check['offset']
+            x['TABLE'] = check['TABLE']
+            x['TYPE'] = t[1]['TYPE']
+            x['STATIC'] = t[1]['STATIC']
+            if (x['INITIALISED'] == ''):
+                x['INITIALISED'] = initialise
+            print x['offset']
 
 # STATIC NOT HERE
+
+def p_SCOPED_VARIABLE_TYPE(t):
+    ''' SCOPED_VARIABLE_TYPE : STATIC VARIABLE_TYPE
+                                | VARIABLE_TYPE
+                                '''
+    if(len(t) == 3):
+        t[0] = {'NODE_TYPE' : 'scoped_type_specifier', 'STATIC':1, 'TYPE': t[2]['TYPE'] }
+    else :
+        t[0] = {'NODE_TYPE' : 'scoped_type_specifier', 'STATIC':0, 'TYPE': t[1]['TYPE'] }
+    print t[0]
   
 def p_LIST_OF_STATEMENTS(t):
     ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
@@ -254,11 +323,26 @@ def p_ENUM_VARIABLE_TYPE(t):
 def p_VARIABLE_DECLARATION(t):
     '''VARIABLE_DECLARATION : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
                         '''
-    # if(len(t)==2):
-    #     t[0]=t[1]
-    # else: 
-    t[0]=t[2]     
-    #print t[0]        
+
+    t[0]={'TYPE':'VARIABLE_DECL','VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
+    for x in t[2]:
+        if (currentSymbolTable.insert(x['ID'],{'TYPE':t[1]['TYPE'],'STATIC':0,'ARRAY': x['ARRAY'],'INDEX1':x['INDEX1'],'INDEX2':x['INDEX2'],'SCOPETYPE':'GLOBAL'}) == False):
+            print x['ID'],': Variable already declared '
+            sys.exit()
+        else:
+            x['SCOPETYPE'] = 'GLOBAL'
+            check = currentSymbolTable.lookupCurrentTable(x['ID'])
+            #print check
+            x['TYPE'] = t[1]['TYPE']
+            x['offset'] = check['offset']
+            x['STATIC'] = 0
+            #print x['offset']
+    print t[0]                                
+    # # if(len(t)==2):
+    # #     t[0]=t[1]
+    # # else: 
+    # t[0]=t[2]     
+    # #print t[0]        
 
 def p_LISTOF_VAR_DECLARATIONS(t):
     '''LISTOF_VAR_DECLARATIONS : LISTOF_VAR_DECLARATIONS COMMA VAR_INITIALIZE
@@ -278,12 +362,17 @@ def p_VAR_INITIALIZE(t):
                             |  VAR_DECLARATION_ID EQUALS EXPRESSION 
                             '''
     
-    if( len(t) == 2):
-        t[0] = t[1]
+#     if( len(t) == 2):
+#         t[0] = t[1]
         
+#     elif ( len(t) == 4):
+#         t[0] = (t[1],t[3])
+# #    print t[0]
+    if( len(t) == 2):
+        t[0] = {'NODE_TYPE':'var_initialise', 'ID': t[1]['IDENTIFIER'], 'ARRAY':t[1]['ARRAY'],'INDEX1':t[1]['INDEX1'],'INDEX2':t[1]['INDEX2'], 'INITIALISED':''}
     elif ( len(t) == 4):
-        t[0] = (t[1],t[3])
-#    print t[0]
+        t[0] = {'NODE_TYPE':'var_initialise', 'ID': t[1]['IDENTIFIER'], 'ARRAY':t[1]['ARRAY'],'INDEX1':t[1]['INDEX1'],'INDEX2':t[1]['INDEX2'], 'INITIALISED':t[3]}
+    print t[0]
 
 def p_VAR_DECLARATION_ID(t):
     ''' VAR_DECLARATION_ID : IDENTIFIER
@@ -295,12 +384,20 @@ def p_VAR_DECLARATION_ID(t):
                     | LEFTBRACKET VARIABLE_TYPE RIGHTBRACKET IDENTIFIER 
                     '''         #int[string] array1;
 #    print 'sahil'
+    # if(len(t) == 2 ):
+    #     t[0] = (t[1])
+    # elif(len(t) == 5):
+    #     t[0] = (t[1],t[3])
+    # else:
+    #     t[0] = (t[1],t[3],t[6])
     if(len(t) == 2 ):
-        t[0] = (t[1])
+        t[0] = {'NODE_TYPE' : 'var_decl_id', 'ARRAY':0, 'IDENTIFIER' : t[1], 'INDEX1': '','INDEX2':''}
+        #print t[1]
     elif(len(t) == 5):
-        t[0] = (t[1],t[3])
+        t[0] = {'NODE_TYPE': 'var_decl_id','ARRAY':1, 'IDENTIFIER' : t[1], 'INDEX1': t[3],'INDEX2':''}
     else:
-        t[0] = (t[1],t[3],t[6])
+        t[0] = {'NODE_TYPE': 'var_decl_id','ARRAY':2, 'IDENTIFIER' : t[1], 'INDEX1': t[3],'INDEX2':t[6]}
+    print t[0]    
 
 
 def p_VARIABLE_TYPE (t):
@@ -314,8 +411,11 @@ def p_VARIABLE_TYPE (t):
                       | STRING
                       | ENUM
                       '''
-    t[0] = t[1]
+    # t[0] = t[1]
     #print t[0]
+    t[0] = {'NODE_TYPE': 'type_specifier', 'TYPE': t[1]}
+    #print t[1]
+    print t[0]
 
 
 def p_RETURN_STATEMENT(t):
