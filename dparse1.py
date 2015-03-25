@@ -24,21 +24,21 @@ def p_LIST_OF_DECLARATIONS(t):
 # RIGHT NOW ONLY VAR_DECLARATION WORKING SO WE ARE USING ONLY THIS RULE
 def p_DECLARATION(t):
     ''' DECLARATION : VARIABLE_DECLARATION
-                    | function_definition
-                    | function_declaration
-                    | variable_definition
-                    | templates
+                    | FUNCTION_DEF
+                    | FUNCTION_DECL
+                    | VARIABLE_DEF
+                    | TEMPLATES
                     '''
     t[0]=t[1]
     # print t[1],'sahil'
     #print t[0]
 
-def p_templates(t):
-    ''' templates : VARIABLE_TYPE IDENTIFIER LEFTPAR temp_params_type RIGHTPAR LEFTPAR temp_params_list RIGHTPAR  statement  
+def p_TEMPLATES(t):
+    ''' TEMPLATES : VARIABLE_TYPE IDENTIFIER LEFTPAR TEMP_PARAMETERS_TYPE RIGHTPAR LEFTPAR LIST_OF_TEMP_PARAMETERS RIGHTPAR  STATEMENT
     '''
     t[0] = (t[1] , t[4] , t[7])   
-def p_temp_param_type(t):
-    ''' temp_params_type : temp_params_type COMMA IDENTIFIER
+def p_TEMP_PARAMETERS_TYPE(t):
+    ''' TEMP_PARAMETERS_TYPE : TEMP_PARAMETERS_TYPE COMMA IDENTIFIER
                     | IDENTIFIER
                     '''
 
@@ -50,8 +50,8 @@ def p_temp_param_type(t):
         t[0] =  [t[1]]
         # parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
 
-def p_temp_params_list(t):
-    ''' temp_params_list : temp_params_list COMMA IDENTIFIER IDENTIFIER
+def p_LIST_OF_TEMP_PARAMETERS(t):
+    ''' LIST_OF_TEMP_PARAMETERS : LIST_OF_TEMP_PARAMETERS COMMA IDENTIFIER IDENTIFIER
                     | IDENTIFIER IDENTIFIER
     '''
 
@@ -65,16 +65,16 @@ def p_temp_params_list(t):
 
 #----------------------------------------------------------------
 
-def p_function_definitions(t):
-    ''' function_definition : VARIABLE_TYPE IDENTIFIER LEFTPAR params RIGHTPAR SEMICOLON
-                            | IDENTIFIER LEFTPAR params RIGHTPAR SEMICOLON
+def p_FUNCTION_DEF(t):
+    ''' FUNCTION_DEF : VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
+                            | IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
                             
                             '''
     t[0] = (t[1],t[2],t[4])
 
 
-def p_params(t):
-    ''' params : param_list
+def p_PARAMETERS(t):
+    ''' PARAMETERS : LIST_OF_PARAMETERS
                 |
                 '''
     #print t[1]
@@ -83,9 +83,9 @@ def p_params(t):
     else:
         t[0] = []
     
-def p_param_list (t):
-    ''' param_list : param_list COMMA param_type_node
-                    | param_type_node
+def p_LIST_OF_PARAMETERS (t):
+    ''' LIST_OF_PARAMETERS : LIST_OF_PARAMETERS COMMA PARAMETER_TYPE
+                    | PARAMETER_TYPE
                     '''
 
     # global parametersymboltable
@@ -96,8 +96,8 @@ def p_param_list (t):
         t[0] =  [t[1]]
         # parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
     
-def p_param_type_node (t):
-    ''' param_type_node : VARIABLE_TYPE IDENTIFIER
+def p_PARAMETER_TYPE (t):
+    ''' PARAMETER_TYPE : VARIABLE_TYPE IDENTIFIER
                         | VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER
                         | REF VARIABLE_TYPE IDENTIFIER
                         | REF VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER 
@@ -115,32 +115,32 @@ def p_param_type_node (t):
         t[0] = t[1]
 # ---------------------------------------------------------------------------------------------
 
-def p_function_declaration(t):
-    ''' function_declaration : VARIABLE_TYPE IDENTIFIER LEFTPAR params RIGHTPAR statement 
-                            | IDENTIFIER LEFTPAR params RIGHTPAR statement
-                            | PURE VARIABLE_TYPE IDENTIFIER LEFTPAR params RIGHTPAR statement   
-                            | VARIABLE_TYPE IDENTIFIER LEFTPAR params RIGHTPAR NOTHROW statement  
-                            | REF VARIABLE_TYPE IDENTIFIER LEFTPAR params RIGHTPAR statement  
-                            | AUTO IDENTIFIER LEFTPAR params RIGHTPAR statement   
-                            | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR statement   
+def p_FUNCTION_DECL(t):
+    ''' FUNCTION_DECL : VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT 
+                            | IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT
+                            | PURE VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT  
+                            | VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR NOTHROW STATEMENT  
+                            | REF VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT 
+                            | AUTO IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT   
+                            | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR STATEMENT  
                             '''
     t[0] = (t[5])
     print (t[6])
     # print 'function declaration'
 
-def p_statement(t):
-    ''' statement : expression_stmt
-                    | compound_stmt
-                    | decision_stmt
-                    | iteration_stmt
+def p_STATEMENT(t):
+    ''' STATEMENT : EXPRESSION_STATEMENT
+                    | COMPLEX_STATEMENT
+                    | DECISION_STATEMENT
+                    | LOOP_STATEMENT
                     | RETURN_STATEMENT
                     | BREAK_STATEMENT
                     '''
     t[0] = {'NODE_TYPE':'STATEMENT','CHILD':t[1]}
     # print 'statement', t[0]
 
-def p_expression_stmt(t):
-    ''' expression_stmt : EXPRESSION SEMICOLON
+def p_EXPRESSION_STATEMENT(t):
+    ''' EXPRESSION_STATEMENT : EXPRESSION SEMICOLON
                         
                         '''
     if(len(t) == 2):
@@ -149,13 +149,13 @@ def p_expression_stmt(t):
         t[0] = {'NODE_TYPE':'expression_stmt', 'EXPRESSION':t[1]}
     # print 'expression ' , t[0]    
 
-def p_compound_stmt(t):
-    ''' compound_stmt : LEFTBRACE local_declarations statement_list RIGHTBRACE
+def p_COMPLEX_STATEMENT(t):
+    ''' COMPLEX_STATEMENT : LEFTBRACE PROG_LOCAL_DECLS LIST_OF_STATEMENTS RIGHTBRACE
                         '''
     t[0] = {'NODE_TYPE':'compound_stmt','STATEMENTS': t[3],'LOCAL_DECL': t[2]}
 
-def p_local_declarations(t):
-    ''' local_declarations : local_declarations scoped_var_declaration
+def p_PROG_LOCAL_DECLS(t):
+    ''' PROG_LOCAL_DECLS : PROG_LOCAL_DECLS  SCOPED_VARIABLE_DECL
                             |
                             '''
     if( len(t) == 3 ):
@@ -165,8 +165,8 @@ def p_local_declarations(t):
         t[0] = []
 
           
-def p_scoped_var_declaration(t):
-    '''scoped_var_declaration : scoped_type_specifier LISTOF_VAR_DECLARATIONS SEMICOLON
+def p_SCOPED_VARIABLE_DECL(t):
+    ''' SCOPED_VARIABLE_DECL : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
                                '''
     t[0] = t[1]     
     # t[0]={'NODE_TYPE':'scoped_var_declaration','STATIC':t[1]['STATIC'],'VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
@@ -191,13 +191,11 @@ def p_scoped_var_declaration(t):
     #         if (x['INITIALISED'] == ''):
     #             x['INITIALISED'] = initialise
             #print x['offset']
-def p_scoped_type_specifier(t):
-    ''' scoped_type_specifier : STATIC VARIABLE_TYPE
-                                | VARIABLE_TYPE
-                                '''
+
+# STATIC NOT HERE
   
-def p_statement_list(t):
-    ''' statement_list : statement_list statement
+def p_LIST_OF_STATEMENTS(t):
+    ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
                         |
                         '''
     if ( len(t) == 3):
@@ -205,9 +203,9 @@ def p_statement_list(t):
     else :
         t[0] = ['']
 
-def p_decision_stmt (t):
-    '''decision_stmt : IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR statement
-                        | IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR statement ELSE statement
+def p_DECISION_STATEMENT (t):
+    '''DECISION_STATEMENT : IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
+                        | IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT ELSE STATEMENT
                         '''
 
     if( len(t) == 6):
@@ -217,10 +215,10 @@ def p_decision_stmt (t):
         t[0] = {'NODE_TYPE':'IF_ELSE', 'CONDITION': t[3], 'ifProgram': t[5], 'elseProgram': t[7]}
         #print t[0]
         
-def p_iteration_stmt (t):
-    '''iteration_stmt : WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR statement
-                        | FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR   statement
-                        | DO statement WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR SEMICOLON 
+def p_LOOP_STATEMENT(t):
+    '''LOOP_STATEMENT : WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
+                        | FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR  STATEMENT
+                        | DO STATEMENT WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR SEMICOLON 
                         '''
     if( len(t) == 6):
         t[0] = {'NODE_TYPE':'WHILE', 'CONDITION': t[3], 'partProgram':t[5]}
@@ -234,8 +232,8 @@ def p_iteration_stmt (t):
 
 #---------------------------------------------------------------
 
-def p_variable_definition(t):
-    ''' variable_definition : ENUM ENUM_VARIABLE_TYPE LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE SEMICOLON
+def p_VARIABLE_DEF(t):
+    ''' VARIABLE_DEF : ENUM ENUM_VARIABLE_TYPE LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE SEMICOLON
                             | ENUM COLON VARIABLE_TYPE LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE 
                             | ENUM LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE
                         '''
@@ -468,18 +466,17 @@ def p_DIFF_ID(t):
 
 def p_STRUCT_EXPR(t):
     ''' STRUCT_EXPR : LEFTPAR EXPRESSION RIGHTPAR
-                    | CONSTANT
-                    | functionCall
                     | LEFTBRACKET LIST_OF_CONSTANTS RIGHTBRACKET
-                    
+                    | CONSTANT
+                    | FUNCTION_INSTANCE                    
                     '''
     if(len(t) == 4):
         t[0] = t[2]
     else:
         t[0] = t[1]
 
-def p_functionCall (t):
-    ''' functionCall : IDENTIFIER LEFTPAR args RIGHTPAR
+def p_FUNCTION_INSTANCE (t):
+    ''' FUNCTION_INSTANCE : IDENTIFIER LEFTPAR FUNC_ARGUMENTS RIGHTPAR
             '''
     t[0] = {'NODE_TYPE':'call', 'IDENTIFIER':t[1], 'ARGS':t[3], 'TYPE':''}
     # global FUNCTION_PROTOTYPE_DECLARATION
@@ -505,8 +502,8 @@ def p_functionCall (t):
     #                 print "ARGUMENT TYPES DO NOT MATCH for function", func['NAME']
     #                 sys.exit()
 
-def p_args(t):
-    ''' args : args_list
+def p_FUNC_ARGUMENTS(t):
+    ''' FUNC_ARGUMENTS : LIST_OF_FUNCTION_ARGUMENTS
             |
             '''
     if(len(t) == 2):
@@ -517,8 +514,8 @@ def p_args(t):
     #print t[0]
     
         
-def p_args_list(t):
-    ''' args_list : args_list COMMA EXPRESSION
+def p_LIST_OF_FUNCTION_ARGUMENTS(t):
+    ''' LIST_OF_FUNCTION_ARGUMENTS : LIST_OF_FUNCTION_ARGUMENTS COMMA EXPRESSION
                     | EXPRESSION
                     '''
     if(len(t) == 4):
