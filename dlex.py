@@ -277,7 +277,7 @@ def t_FLOAT_CONSTANT(t):
   return t  
 
 def t_INT_CONSTANT(t):
-  r'(\d+([uU]|[lL]|[uU][lL]|[lL][uU])?)|(0b([0-1]+?))|(0([0-7]+?))'
+  r'(\d+([uU]|[lL]|[uU][lL]|[lL][uU])?)|(0b([0-1]+?))|(0([0-7]+?))|0'
   t.value = [t.value,'INT_CONSTANT']
   return t
 

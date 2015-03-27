@@ -3,121 +3,139 @@ import time
 import dlex
 import ply.yacc as yacc
 tokens = dlex.tokens
+from SymbolTable import *
 
-def p_startProgram(t):
+global currentSymbolTable
+currentSymbolTable = SymbolTable(-1)
+global FUNCTION_PROTOTYPES
+FUNCTION_PROTOTYPES = [{'FUNC_NAME':' ','INPUT':'',"OUTPUT":''}]
+global DefinedFunctions
+DefinedFunctions = []
+global parametersymboltable
+parametersymboltable = SymbolTable(-1)
+tableNumber = 1;
+
+def p_startProgram(p):
     ''' Program : LIST_OF_DECLARATIONS
                 '''
 
-    t[0] = {'TYPE':'startProgram','CHILD':t[1]}                
-#    t[0] = t[1]
-    #print t[0]
+    p[0] = {'TYPE':'startProgram','CHILD':p[1]}                
+#    p[0] = p[1]
+    #
 
-def p_LIST_OF_DECLARATIONS(t):
+def p_LIST_OF_DECLARATIONS(p):
     '''LIST_OF_DECLARATIONS : LIST_OF_DECLARATIONS DECLARATION
                         | DECLARATION
                         '''                        
-    if( len(t) == 3):
-        t[0]=t[1]+[t[2]]
+    if( len([p]) == 3):
+        p[0]=p[1]+[p[2]]
     else:
-        t[0] = t[1]
-        # print t[0]
+        p[0] = p[1]
+        # 
 
-    #print t[0]
+    #
 # RIGHT NOW ONLY VAR_DECLARATION WORKING SO WE ARE USING ONLY THIS RULE
-def p_DECLARATION(t):
+def p_DECLARATION(p):
     ''' DECLARATION : VARIABLE_DECLARATION
                     | FUNCTION_DEF
                     | FUNCTION_DECL
                     | VARIABLE_DEF
                     | TEMPLATES
                     '''
-    t[0]=t[1]
-    # print t[1],'sahil'
-    #print t[0]
+    p[0]=p[1]
+    # print p[1],'sahil'
+    #
 
-def p_TEMPLATES(t):
+def p_TEMPLATES(p):
     ''' TEMPLATES : VARIABLE_TYPE IDENTIFIER LEFTPAR TEMP_PARAMETERS_TYPE RIGHTPAR LEFTPAR LIST_OF_TEMP_PARAMETERS RIGHTPAR  STATEMENT
     '''
-    t[0] = (t[1] , t[4] , t[7])   
-def p_TEMP_PARAMETERS_TYPE(t):
+    p[0] = (p[1] , p[4] , p[7])
+
+def p_TEMP_PARAMETERS_TYPE(p):
     ''' TEMP_PARAMETERS_TYPE : TEMP_PARAMETERS_TYPE COMMA IDENTIFIER
                     | IDENTIFIER
                     '''
 
     # global parametersymboltable
-    if(len(t) == 4):
-        t[0] = t[1] + [t[3]]
-        # parametersymboltable.insert(t[3]['IDENTIFIER'],{'TYPE':t[3]['TYPE'],'ARRAY':t[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
+    if(len(p) == 4):
+        p[0] = p[1] + [p[3]]
+        # parametersymboltable.insert(p[3]['IDENTIFIER'],{'TYPE':p[3]['TYPE'],'ARRAY':p[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
     else:
-        t[0] =  [t[1]]
-        # parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
+        p[0] =  [p[1]]
+        # parametersymboltable.insert(p[1]['IDENTIFIER'],{'TYPE':p[1]['TYPE'],'ARRAY':p[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
 
-def p_LIST_OF_TEMP_PARAMETERS(t):
+def p_LIST_OF_TEMP_PARAMETERS(p):
     ''' LIST_OF_TEMP_PARAMETERS : LIST_OF_TEMP_PARAMETERS COMMA IDENTIFIER IDENTIFIER
                     | IDENTIFIER IDENTIFIER
     '''
 
     # global parametersymboltable
-    if(len(t) == 5):
-        t[0] = t[1] + [t[3]]
-        # parametersymboltable.insert(t[3]['IDENTIFIER'],{'TYPE':t[3]['TYPE'],'ARRAY':t[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
+    if(len(p) == 5):
+        p[0] = p[1] + [p[3]]
+        # parametersymboltable.insert(p[3]['IDENTIFIER'],{'TYPE':p[3]['TYPE'],'ARRAY':p[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
     else:
-        t[0] =  [t[1]]
-        # parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
+        p[0] =  [p[1]]
+        # parametersymboltable.insert(p[1]['IDENTIFIER'],{'TYPE':p[1]['TYPE'],'ARRAY':p[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
 
 #----------------------------------------------------------------
 
-def p_FUNCTION_DEF(t):
-    ''' FUNCTION_DEF : VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
-                            | IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
-                            
-                            '''
-    # t[0] = (t[1],t[2],t[4])
-    global FUNCTION_PROTOTYPE_DECLARATION
-    global functions
+def p_FUNCTION_DEF(p):
+    ''' FUNCTION_DEF : IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
+                        | VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR SEMICOLON
+                        '''
+
+    # p[0] = (p[1],p[2],p[4])
     global parametersymboltable
-    #sys.call()
-    if(len(t) == 7 ):
-        t[0] = {'NODE_TYPE':'function_defination', 'OUTPUT':t[1]['TYPE'], 'INPUT': t[4], 'IDENTIFIER': t[2],'partProgram': ''}
-        currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
-        functions = functions + [currentfunction]
-        CURRENT_DECLARATION = [{"NAME":t[2],"INPUT":t[4],"OUTPUT":t[1]['TYPE']}]
-        FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+    global DefinedFunctions
+    global FUNCTION_PROTOTYPES
+    # global m
+##############################################
+#   type--> op_type , input --> parameters ,     partProgram - > FUNCTION_PROGRAM   Name-> func_name
+#   order not changed
+##########################################################
+    if(len(p) == 6 ):
+        p[0] = {'NODE_TYPE':'FUNCTION_DEF', 'OUTPUT':'VOID', 'PARAMETERS': p[3], 'IDENTIFIER': p[1],'FUNCTION_PROGRAM': ''}
+        newfunction = {'FUNCTION INFORMATIONS ':p[0],'symboltable':parametersymboltable}
+        DefinedFunctions = DefinedFunctions + [newfunction]
+        CURRENT_DECLARATION = [{"FUNC_NAME":p[1],"INPUT":p[3],"OUTPUT":'VOID'}]
+        FUNCTION_PROTOTYPES = FUNCTION_PROTOTYPES + CURRENT_DECLARATION
         parametersymboltable = SymbolTable(-1)
-    elif(len(t) == 6 ):
-        t[0] = {'NODE_TYPE':'function_defination', 'OUTPUT':'VOID', 'INPUT': t[3], 'IDENTIFIER': t[1],'partProgram': ''}
-        currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
-        functions = functions + [currentfunction]
-        CURRENT_DECLARATION = [{"NAME":t[1],"INPUT":t[3],"OUTPUT":'VOID'}]
-        FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+        
+    else:
+        p[0] = {'NODE_TYPE':'FUNCTION_DEF', 'OUTPUT':p[1]['TYPE'], 'PARAMETERS': p[4], 'IDENTIFIER': p[2],'FUNCTION_PROGRAM': ''}
+        newfunction = {'FUNCTION INFORMATIONS ':p[0],'symboltable':parametersymboltable}
+#       add this def to our definedfunctions var
+#        print newfunction
+        DefinedFunctions = DefinedFunctions + [newfunction]
+        CURRENT_DECLARATION = [{"FUNC_NAME":p[2],"INPUT":p[4],"OUTPUT":p[1]['TYPE']}]
+        FUNCTION_PROTOTYPES += CURRENT_DECLARATION
         parametersymboltable = SymbolTable(-1)
-    print t[0]    
+        
 
-
-def p_PARAMETERS(t):
+def p_PARAMETERS(p):
     ''' PARAMETERS : LIST_OF_PARAMETERS
                 |
                 '''
-    #print t[1]
-    if(len(t)==2):
-        t[0] = t[1]
+    #print p[1]
+    if(len(p)==2):
+        p[0] = p[1]
     else:
-        t[0] = []
+        p[0] = []
     
-def p_LIST_OF_PARAMETERS (t):
+def p_LIST_OF_PARAMETERS (p):
     ''' LIST_OF_PARAMETERS : LIST_OF_PARAMETERS COMMA PARAMETER_TYPE
                     | PARAMETER_TYPE
                     '''
 
     global parametersymboltable
-    if(len(t) == 4):
-        t[0] = t[1] + [t[3]]
-        parametersymboltable.insert(t[3]['IDENTIFIER'],{'TYPE':t[3]['TYPE'],'ARRAY':t[3]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1':0,'STATIC':0})
+    if(len(p) == 4):
+        p[0] = p[1] + [p[3]]
+        parametersymboltable.insert(p[3]['IDENTIFIER'],{'TYPE':p[3]['TYPE'],'ARRAY_DIMENTION':p[3]['ARRAY_DIMENTION'],'SCOPETYPE':'PARAMETER','VAR1':0,'STATIC':0})
     else:
-        t[0] =  [t[1]]
-        parametersymboltable.insert(t[1]['IDENTIFIER'],{'TYPE':t[1]['TYPE'],'ARRAY':t[1]['ARRAY'],'SCOPETYPE':'PARAMETER','INDEX1': 0,'STATIC':0})
+        p[0] =  [p[1]]
+        parametersymboltable.insert(p[1]['IDENTIFIER'],{'TYPE':p[1]['TYPE'],'ARRAY_DIMENTION':p[1]['ARRAY_DIMENTION'],'SCOPETYPE':'PARAMETER','VAR1': 0,'STATIC':0})
     
-def p_PARAMETER_TYPE (t):
+def p_PARAMETER_TYPE (p):
     ''' PARAMETER_TYPE : VARIABLE_TYPE IDENTIFIER
                         | VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER
                         | REF VARIABLE_TYPE IDENTIFIER
@@ -126,17 +144,23 @@ def p_PARAMETER_TYPE (t):
                         | IMMUTABLE VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER 
                         
                         '''
-    t[0] = {'NODE_TYPE': 'param_type_node', 'TYPE': t[1]['TYPE'], 'ARRAY': t[2]['ARRAY'],'IDENTIFIER': t[2]['IDENTIFIER']}
-
-    # t[0] = (t[2], t[1])
-    # if (len(t) == 2):
-    #     t[0] = t[1]
+########## RULE STILL REMAINING
+    if(len(p)==3):                        
+        p[0] = {'NODE_TYPE': 'PARAMETER_TYPE', 'TYPE': p[1]['TYPE'], 'ARRAY_DIMENTION': 0 ,'IDENTIFIER': p[2]}
+    elif(len(p)==5):
+        p[0] = {'NODE_TYPE': 'PARAMETER_TYPE', 'TYPE': p[1]['TYPE'], 'ARRAY_DIMENTION': 1 ,'IDENTIFIER': p[4]}
+    
+        
+#    ------------------------------
+    # p[0] = (p[2], p[1])
+    # if (len(p) == 2):
+    #     p[0] = p[1]
     # else:
-    #     t[0] = t[1]
+    #     p[0] = p[1]
 
 # ---------------------------------------------------------------------------------------------
 
-def p_FUNCTION_DECL(t):
+def p_FUNCTION_DECL(p):
     ''' FUNCTION_DECL : VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT 
                             | IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT
                             | PURE VARIABLE_TYPE IDENTIFIER LEFTPAR PARAMETERS RIGHTPAR STATEMENT  
@@ -146,48 +170,49 @@ def p_FUNCTION_DECL(t):
                             | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR STATEMENT  
                             '''
 
-        global FUNCTION_PROTOTYPE_DECLARATION
-    global functions
     global parametersymboltable
-    #sys.call()
-    if(len(t) == 7 ):
-        t[0] = {'NODE_TYPE':'function_declaration', 'OUTPUT':t[1]['TYPE'], 'INPUT': t[4], 'IDENTIFIER': t[2],'partProgram': t[6]}
-        flag = 0
-        for func in FUNCTION_PROTOTYPE_DECLARATION :
-                #print t[2]
-                if(t[2] in func['NAME'] or t[2] == 'main'):
+    global DefinedFunctions
+    global FUNCTION_PROTOTYPES
+######### RULE STILL REMAINING
+    if(len(p) == 6 ):
+        flag = 0        
+        p[0] = {'NODE_TYPE':'FUNCTION_DECLARATION', 'INPUT': p[3] , 'OUTPUT':'VOID', 'IDENTIFIER': p[1],'FUNCTION_PROGRAM': p[5]}
+        for f in FUNCTION_PROTOTYPES :
+            # WHAT ABOUT MAIN()
+                if(p[1] in f['FUNC_NAME']):
                     flag=1
-                    func['partProgram'] = t[6]
+                    func['FUNCTION_PROGRAM'] = p[5]
                     break
         if(flag != 1):
-            print "function definition missing for ",t[2]
-            currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
-            functions = functions + [currentfunction]
-            CURRENT_DECLARATION = [{"NAME":t[2],"INPUT":t[4],"OUTPUT":t[1]['TYPE']}]
-            FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
-            
-    elif(len(t) == 6 ):
-        t[0] = {'NODE_TYPE':'function_declaration', 'OUTPUT':'VOID', 'INPUT': t[3], 'IDENTIFIER': t[1],'partProgram': t[5]}
-        flag = 0
-        for func in FUNCTION_PROTOTYPE_DECLARATION :
-                if(t[1] in func['NAME'] or t[1] == 'main'):
-                    flag=1
-                    func['partProgram'] = t[5]
-                    break
-        if(flag != 1):
-            print "function definition missing for ",t[2]
-            currentfunction = {'Function Detail':t[0],'symboltable':parametersymboltable}
-            functions = functions + [currentfunction]
-            CURRENT_DECLARATION = [{"NAME":t[1],"INPUT":t[3],"OUTPUT":'VOID'}]
-            FUNCTION_PROTOTYPE_DECLARATION = FUNCTION_PROTOTYPE_DECLARATION + CURRENT_DECLARATION
+            print "No function defined like this : ", p[2]
+            currentfunction = {'Function Detail':p[0],'symboltable':parametersymboltable}
+            DefinedFunctions = DefinedFunctions + [currentfunction]
+            CURRENT_DECLARATION = [{"NAME":p[1],"INPUT":p[3],"OUTPUT":'VOID'}]
+            FUNCTION_PROTOTYPES += CURRENT_DECLARATION
             parametersymboltable = SymbolTable(-1)
-    print t[0]       
 
-    # t[0] = (t[5])
-    # print (t[6])
+    elif(len(p) == 7 ):
+        flag = 0
+        p[0] = {'NODE_TYPE':'FUNCTION_DECLARATION',  'INPUT': p[4], 'OUTPUT':p[1]['TYPE'], 'IDENTIFIER': p[2],'FUNCTION_PROGRAM': p[6]}        
+        for f in FUNCTION_PROTOTYPES :
+                #print p[2]
+                if(p[2] in f['FUNC_NAME']):
+                    flag=1
+                    f['FUNCTION_PROGRAM'] = p[6]
+                    break
+        if(flag == 0 ):
+            print "No function defined like this :  ", p[2]
+            newfunction = {'FUNCTION INFORMATIONS: ':p[0],'symboltable':parametersymboltable}
+            DefinedFunctions = DefinedFunctions + [newfunction]
+            CURRENT_DECLARATION = [{"FUNC_NAME":p[2],"INPUT":p[4],"OUTPUT":p[1]['TYPE']}]
+            FUNCTION_PROTOTYPES += CURRENT_DECLARATION
+                       
+
+    # p[0] = (p[5])
+    # print (p[6])
     # print 'function declaration'
 
-def p_STATEMENT(t):
+def p_STATEMENT(p):
     ''' STATEMENT : EXPRESSION_STATEMENT
                     | COMPLEX_STATEMENT
                     | DECISION_STATEMENT
@@ -195,186 +220,189 @@ def p_STATEMENT(t):
                     | RETURN_STATEMENT
                     | BREAK_STATEMENT
                     '''
-    t[0] = {'NODE_TYPE':'STATEMENT','CHILD':t[1]}
-    # print 'statement', t[0]
+    p[0] = {'NODE_TYPE':'STATEMENT','CHILD':p[1]}
+    # print 'statement', p[0]
 
-def p_EXPRESSION_STATEMENT(t):
+def p_EXPRESSION_STATEMENT(p):
     ''' EXPRESSION_STATEMENT : EXPRESSION SEMICOLON
                         
                         '''
-    if(len(t) == 2):
-        t[0] = {'NODE_TYPE':'expression_stmt', 'EXPRESSION':''}
+    if(len(p) == 2):
+        p[0] = {'NODE_TYPE':'EXPRESSION_STATEMENT', 'EXPRESSION':''}
     else:
-        t[0] = {'NODE_TYPE':'expression_stmt', 'EXPRESSION':t[1]}
-    # print 'expression ' , t[0]    
+        p[0] = {'NODE_TYPE':'EXPRESSION_STATEMENT', 'EXPRESSION':p[1]}
+    # print 'expression ' , p[0]    
 
-def p_COMPLEX_STATEMENT(t):
-    ''' COMPLEX_STATEMENT : LEFTBRACE PROG_LOCAL_DECLS LIST_OF_STATEMENTS RIGHTBRACE
+def p_COMPLEX_STATEMENT(p):
+    ''' COMPLEX_STATEMENT : LEFTBRACES PROG_LOCAL_DECLS LIST_OF_STATEMENTS RIGHTBRACES
                         '''
-    t[0] = {'NODE_TYPE':'compound_stmt','STATEMENTS': t[3],'LOCAL_DECL': t[2]}
+    p[0] = {'NODE_TYPE':'COMPLEX_STATEMENT','STATEMENTS': p[3],'LOCAL_DECL': p[2]}
 
-def p_PROG_LOCAL_DECLS(t):
+def p_PROG_LOCAL_DECLS(p):
     ''' PROG_LOCAL_DECLS : PROG_LOCAL_DECLS  SCOPED_VARIABLE_DECL
                             |
                             '''
-    if( len(t) == 3 ):
-        t[0] = t[1] + [t[2]]
-        #t[0] = t[1] + t[2]
+    if( len(p) == 3 ):
+#        print p[2]
+        p[0] = p[1] + [p[2]]
+
     else:
-        t[0] = []
+        p[0] = []
 
           
-def p_SCOPED_VARIABLE_DECL(t):
+def p_SCOPED_VARIABLE_DECL(p):
     ''' SCOPED_VARIABLE_DECL : SCOPED_VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
                                '''
-    t[0] = t[1]     
-    t[0]={'NODE_TYPE':'scoped_var_declaration','STATIC':t[1]['STATIC'],'VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
+    p[0] = p[1]     
+    p[0]={'NODE_TYPE':'SCOPED_VARIABLE_DECL','STATIC':p[1]['STATIC'], 'VAR_TYPE':p[1]['TYPE'], 'VAR_LIST': p[2]}
 
     table = 'LOCAL'
     initialise = ''
-    if(t[1]['TYPE'] == 'float'):
-        table = 'GLOBAL'
-        initialise = {'TYPE': 'float', 'NODE_TYPE': 'expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'simple_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'and_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'sum_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'term', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_expression', 'OP': '', 'EXPRESSION': {'SUBTYPE': 'immutable', 'NODE_TYPE': 'factor', 'EXPRESSION': {'SUBTYPE': 'Constant', 'NODE_TYPE': 'immutable', 'TYPE': 'float', 'VALUE': '0.0'}, 'TYPE': 'float'}, 'factor': 1}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OPS': ''}
-    for x in t[2]:
-        if (currentSymbolTable.insert(x['ID'],{'TYPE':t[1]['TYPE'],'STATIC':t[1]['STATIC'],'ARRAY': x['ARRAY'],'INDEX1':x['INDEX1'],'INDEX2':x['INDEX2'],'SCOPETYPE':table}) == False):
-            print x['ID'],': Variable already declared '
+    # if(p[1]['TYPE'] == 'float'):
+    #     table = 'GLOBAL'
+    #     initialise = {'TYPE': 'float', 'NODE_TYPE': 'expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'simple_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'and_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'rel_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'sum_expression', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'term', 'EXPRESSION': {'TYPE': 'float', 'NODE_TYPE': 'unary_expression', 'OP': '', 'EXPRESSION': {'SUBTYPE': 'immutable', 'NODE_TYPE': 'factor', 'EXPRESSION': {'SUBTYPE': 'Constant', 'NODE_TYPE': 'immutable', 'TYPE': 'float', 'VALUE': '0.0'}, 'TYPE': 'float'}, 'factor': 1}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OP': ''}, 'OPS': ''}
+    for var in p[2]:
+        if (currentSymbolTable.insert(var['IDENTIFIER'],{'TYPE':p[1]['TYPE'],'STATIC':p[1]['STATIC'],'ARRAY_DIMENTION': var['ARRAY_DIMENTION'],'VAL1':var['VAL1'],'VAL2':var['VAL2'],'SCOPETYPE':table}) == False):
+            print var['IDENTIFIER'],': Already Declared Before!! '
             sys.exit()
         else:
-            x['SCOPETYPE'] = 'LOCAL'
-            check = currentSymbolTable.lookupCurrentTable(x['ID'])
+            var['SCOPETYPE'] = 'LOCAL'
+            check = currentSymbolTable.lookupCurrentTable(var['IDENTIFIER'])
             #print check
-            x['offset'] = check['offset']
-            x['TABLE'] = check['TABLE']
-            x['TYPE'] = t[1]['TYPE']
-            x['STATIC'] = t[1]['STATIC']
-            if (x['INITIALISED'] == ''):
-                x['INITIALISED'] = initialise
-            print x['offset']
+            var['offset'] = check['offset']
+            var['TABLE'] = check['TABLE']
+            var['TYPE'] = p[1]['TYPE']
+            var['STATIC'] = p[1]['STATIC']
+            if (var['INITIALISED'] == ''):
+                var['INITIALISED'] = initialise
+            print var['offset']
 
 # STATIC NOT HERE
 
-def p_SCOPED_VARIABLE_TYPE(t):
+def p_SCOPED_VARIABLE_TYPE(p):
     ''' SCOPED_VARIABLE_TYPE : STATIC VARIABLE_TYPE
                                 | VARIABLE_TYPE
                                 '''
-    if(len(t) == 3):
-        t[0] = {'NODE_TYPE' : 'scoped_type_specifier', 'STATIC':1, 'TYPE': t[2]['TYPE'] }
+    if(len(p) == 3):
+        p[0] = {'NODE_TYPE' : 'SCOPED_VARIABLE_TYPE', 'STATIC':1, 'TYPE': p[2]['TYPE'] }
     else :
-        t[0] = {'NODE_TYPE' : 'scoped_type_specifier', 'STATIC':0, 'TYPE': t[1]['TYPE'] }
-    print t[0]
+        p[0] = {'NODE_TYPE' : 'SCOPED_VARIABLE_TYPE', 'STATIC':0, 'TYPE': p[1]['TYPE'] }
+    
   
-def p_LIST_OF_STATEMENTS(t):
+def p_LIST_OF_STATEMENTS(p):
     ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
                         |
                         '''
-    if ( len(t) == 3):
-        t[0] = t[1] + [t[2]]
+    if ( len(p) == 3):
+        p[0] = p[1] + [p[2]]
     else :
-        t[0] = ['']
+        p[0] = ['']
 
-def p_DECISION_STATEMENT (t):
+def p_DECISION_STATEMENT (p):
     '''DECISION_STATEMENT : IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
                         | IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT ELSE STATEMENT
                         '''
 
-    if( len(t) == 6):
-        t[0] = {'NODE_TYPE':'IF', 'CONDITION': t[3], 'ifProgram': t[5], 'elseProgram':''}
-        #print t[0]
+    if( len(p) == 6):
+        p[0] = {'NODE_TYPE':'IF', 'CONDITION': p[3], 'ifProgram': p[5], 'elseProgram':''}
+        #
     else:
-        t[0] = {'NODE_TYPE':'IF_ELSE', 'CONDITION': t[3], 'ifProgram': t[5], 'elseProgram': t[7]}
-        #print t[0]
+        p[0] = {'NODE_TYPE':'IF_ELSE', 'CONDITION': p[3], 'ifProgram': p[5], 'elseProgram': p[7]}
+        #
         
-def p_LOOP_STATEMENT(t):
-    '''LOOP_STATEMENT : WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
-                        | FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR  STATEMENT
+def p_LOOP_STATEMENT(p):
+    '''LOOP_STATEMENT : FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR  STATEMENT
+                        | WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
                         | DO STATEMENT WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR SEMICOLON 
                         '''
-    if( len(t) == 6):
-        t[0] = {'NODE_TYPE':'WHILE', 'CONDITION': t[3], 'partProgram':t[5]}
-
-    elif ( len(t) == 10):
-        t[0] = {'NODE_TYPE':'FOR', 'CONDITION': t[5], 'INITIALISE': t[3], 'UPDATE': t[7], 'partProgram': t[9]}
-
+    
+    if ( len(p) == 10):
+        p[0] = {'NODE_TYPE':'FOR', 'CONDITION': p[5], 'INITIALISE': p[3], 'UPDATE': p[7], 'PARTIAL_PROGRAM': p[9]}
+    elif( len(p) == 6):
+        p[0] = {'NODE_TYPE':'WHILE', 'CONDITION': p[3], 'PARTIAL_PROGRAM':p[5]}    
     else:
-        t[0] = {'NODE_TYPE':'DO', 'CONDITION': t[5],'partProgram': t[2]}
+        p[0] = {'NODE_TYPE':'DO', 'CONDITION': p[5],'PARTIAL_PROGRAM': p[2]}
 
 
 #---------------------------------------------------------------
 
-def p_VARIABLE_DEF(t):
-    ''' VARIABLE_DEF : ENUM ENUM_VARIABLE_TYPE LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE SEMICOLON
-                            | ENUM COLON VARIABLE_TYPE LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE 
-                            | ENUM LEFTBRACE LISTOF_VAR_DECLARATIONS RIGHTBRACE
+def p_VARIABLE_DEF(p):
+    ''' VARIABLE_DEF : ENUM ENUM_VARIABLE_TYPE LEFTBRACES LISTOF_VAR_DECLARATIONS RIGHTBRACES SEMICOLON
+                            | ENUM COLON VARIABLE_TYPE LEFTBRACES LISTOF_VAR_DECLARATIONS RIGHTBRACES 
+                            | ENUM LEFTBRACES LISTOF_VAR_DECLARATIONS RIGHTBRACES
                         '''
-    # if(len(t)==2):
-    #     t[0]=t[1]
+###############################################
+    # if(len(p)==2):
+    #     p[0]=p[1]
     # else: 
-    t[0]=t[4]     
-    #print t[0]        
-def p_ENUM_VARIABLE_TYPE(t):
+    p[0]=p[4]     
+    #        
+def p_ENUM_VARIABLE_TYPE(p):
     ''' ENUM_VARIABLE_TYPE : IDENTIFIER
                         '''
-    # if(len(t)==2):
-    #     t[0]=t[1]
+################################################
+    # if(len(p)==2):
+    #     p[0]=p[1]
     # else: 
-    t[0]=t[1]     
-    #print t[0]        
+    p[0]=p[1]     
+    #        
 
-def p_VARIABLE_DECLARATION(t):
+def p_VARIABLE_DECLARATION(p):
     '''VARIABLE_DECLARATION : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
                         '''
 
-    t[0]={'TYPE':'VARIABLE_DECL','VAR_TYPE':t[1]['TYPE'], 'VAR_LIST': t[2]}
-    for x in t[2]:
-        if (currentSymbolTable.insert(x['ID'],{'TYPE':t[1]['TYPE'],'STATIC':0,'ARRAY': x['ARRAY'],'INDEX1':x['INDEX1'],'INDEX2':x['INDEX2'],'SCOPETYPE':'GLOBAL'}) == False):
-            print x['ID'],': Variable already declared '
+    p[0]={'TYPE':'VARIABLE_DECL','VAR_TYPE':p[1]['TYPE'], 'VAR_LIST': p[2]}
+
+    for var in p[2]:
+        if (currentSymbolTable.insert(var['ID'],{'TYPE':p[1]['TYPE'],'STATIC':0,'ARRAY_DIMENTION': var['ARRAY_DIMENTION'],'VAR1':var['VAR1'],'VAR2':var['VAR2'],'SCOPETYPE':'GLOBAL'}) == False):
+            print var['IDENTIFIER'],': Declared Already Before!! '
             sys.exit()
         else:
-            x['SCOPETYPE'] = 'GLOBAL'
-            check = currentSymbolTable.lookupCurrentTable(x['ID'])
+            var['SCOPETYPE'] = 'GLOBAL'
+            check = currentSymbolTable.lookupCurrentTable(var['IDENTIFIER'])
             #print check
-            x['TYPE'] = t[1]['TYPE']
-            x['offset'] = check['offset']
-            x['STATIC'] = 0
+            var['TYPE'] = p[1]['TYPE']
+            var['offset'] = check['offset']
+            var['STATIC'] = 0
             #print x['offset']
-    print t[0]                                
-    # # if(len(t)==2):
-    # #     t[0]=t[1]
+                                    
+    # # if(len(p)==2):
+    # #     p[0]=p[1]
     # # else: 
-    # t[0]=t[2]     
-    # #print t[0]        
+    # p[0]=p[2]     
+    # #        
 
-def p_LISTOF_VAR_DECLARATIONS(t):
+def p_LISTOF_VAR_DECLARATIONS(p):
     '''LISTOF_VAR_DECLARATIONS : LISTOF_VAR_DECLARATIONS COMMA VAR_INITIALIZE
                     | VAR_INITIALIZE
                     '''
 
-    if( len(t) == 4):
-        t[0] = t[1] + [t[3]]
+    if( len(p) == 4):
+        p[0] = p[1] + [p[3]]
     else:
         #print 'sahil'
-        #print t[1]
-        t[0] = [t[1]]
-    #print t[0]    
+        #print p[1]
+        p[0] = [p[1]]
+    #    
 
-def p_VAR_INITIALIZE(t):
+def p_VAR_INITIALIZE(p):
     '''VAR_INITIALIZE : VAR_DECLARATION_ID
                             |  VAR_DECLARATION_ID EQUALS EXPRESSION 
                             '''
     
-#     if( len(t) == 2):
-#         t[0] = t[1]
+#     if( len(p) == 2):
+#         p[0] = p[1]
         
-#     elif ( len(t) == 4):
-#         t[0] = (t[1],t[3])
-# #    print t[0]
-    if( len(t) == 2):
-        t[0] = {'NODE_TYPE':'var_initialise', 'ID': t[1]['IDENTIFIER'], 'ARRAY':t[1]['ARRAY'],'INDEX1':t[1]['INDEX1'],'INDEX2':t[1]['INDEX2'], 'INITIALISED':''}
-    elif ( len(t) == 4):
-        t[0] = {'NODE_TYPE':'var_initialise', 'ID': t[1]['IDENTIFIER'], 'ARRAY':t[1]['ARRAY'],'INDEX1':t[1]['INDEX1'],'INDEX2':t[1]['INDEX2'], 'INITIALISED':t[3]}
-    print t[0]
+#     elif ( len(p) == 4):
+#         p[0] = (p[1],p[3])
+# #    
+    if( len(p) == 2):
+        p[0] = {'NODE_TYPE':'VAR_INITIALIZE', 'IDENTIFIER': p[1]['IDENTIFIER'], 'ARRAY_DIMENTION':p[1]['ARRAY_DIMENTION'],'VAL1':p[1]['VAL1'],'VAL2':p[1]['VAL2'], 'INITIALISED':''}
+    elif ( len(p) == 4):
+        p[0] = {'NODE_TYPE':'VAR_INITIALIZE', 'IDENTIFIER': p[1]['IDENTIFIER'], 'ARRAY_DIMENTION':p[1]['ARRAY_DIMENTION'],'VAL1':p[1]['VAL1'],'VAL2':p[1]['VAL2'], 'INITIALISED':p[3]}
+    
 
-def p_VAR_DECLARATION_ID(t):
+def p_VAR_DECLARATION_ID(p):
     ''' VAR_DECLARATION_ID : IDENTIFIER
                     | IDENTIFIER LEFTBRACKET INT_CONSTANT RIGHTBRACKET
                     | IDENTIFIER LEFTBRACKET INT_CONSTANT RIGHTBRACKET LEFTBRACKET INT_CONSTANT RIGHTBRACKET
@@ -382,25 +410,25 @@ def p_VAR_DECLARATION_ID(t):
                     | LEFTBRACKET RIGHTBRACKET IDENTIFIER LEFTBRACKET INT_CONSTANT RIGHTBRACKET
                     | LEFTBRACKET INT_CONSTANT RIGHTBRACKET LEFTBRACKET INT_CONSTANT RIGHTBRACKET IDENTIFIER
                     | LEFTBRACKET VARIABLE_TYPE RIGHTBRACKET IDENTIFIER 
-                    '''         #int[string] array1;
+                    '''         #inp[string] array1;
 #    print 'sahil'
-    # if(len(t) == 2 ):
-    #     t[0] = (t[1])
-    # elif(len(t) == 5):
-    #     t[0] = (t[1],t[3])
+    # if(len(p) == 2 ):
+    #     p[0] = (p[1])
+    # elif(len(p) == 5):
+    #     p[0] = (p[1],p[3])
     # else:
-    #     t[0] = (t[1],t[3],t[6])
-    if(len(t) == 2 ):
-        t[0] = {'NODE_TYPE' : 'var_decl_id', 'ARRAY':0, 'IDENTIFIER' : t[1], 'INDEX1': '','INDEX2':''}
-        #print t[1]
-    elif(len(t) == 5):
-        t[0] = {'NODE_TYPE': 'var_decl_id','ARRAY':1, 'IDENTIFIER' : t[1], 'INDEX1': t[3],'INDEX2':''}
+    #     p[0] = (p[1],p[3],p[6])
+    if(len(p) == 2 ):
+        p[0] = {'NODE_TYPE' : 'VAR_DECLARATION_ID', 'ARRAY_DIMENTION':0, 'IDENTIFIER' : p[1], 'VAL1': '','VAL2':''}
+        #print p[1]
+    elif(len(p) == 5):
+        p[0] = {'NODE_TYPE': 'VAR_DECLARATION_ID','ARRAY_DIMENTION':1, 'IDENTIFIER' : p[1], 'VAL1': p[3],'VAL2':''}
     else:
-        t[0] = {'NODE_TYPE': 'var_decl_id','ARRAY':2, 'IDENTIFIER' : t[1], 'INDEX1': t[3],'INDEX2':t[6]}
-    print t[0]    
+        p[0] = {'NODE_TYPE': 'VAR_DECLARATION_ID','ARRAY_DIMENTION':2, 'IDENTIFIER' : p[1], 'VAL1': p[3],'VAL2':p[6]}
+        
 
 
-def p_VARIABLE_TYPE (t):
+def p_VARIABLE_TYPE (p):
     ''' VARIABLE_TYPE : INT 
                       | FLOAT
                       | CHAR
@@ -411,81 +439,125 @@ def p_VARIABLE_TYPE (t):
                       | STRING
                       | ENUM
                       '''
-    # t[0] = t[1]
-    #print t[0]
-    t[0] = {'NODE_TYPE': 'type_specifier', 'TYPE': t[1]}
-    #print t[1]
-    print t[0]
+    # p[0] = p[1]
+    #
+    p[0] = {'NODE_TYPE': 'VARIABLE_TYPE', 'TYPE': p[1]}
+    #print p[1]
+    
 
 
-def p_RETURN_STATEMENT(t):
+def p_RETURN_STATEMENT(p):
     '''RETURN_STATEMENT : RETURN EXPRESSION SEMICOLON
                     | RETURN SEMICOLON
                     '''
-    if(len(t) == 3):
-        t[0] = ('RETURN')
+    # if(len(p) == 3):
+    #     p[0] = ('RETURN')
+    # else:
+    #     p[0] = ('RETURN',p[2])
+    if(len(p) == 3):
+        p[0] = {'NODE_TYPE':'RETURN_STATEMENT', 'EXPRESSION':'', 'VALUE':'RETURN'}
     else:
-        t[0] = ('RETURN',t[2])
+        p[0] = {'NODE_TYPE':'RETURN_STATEMENT', 'EXPRESSION':p[2], 'VALUE':'RETURN'}
+    #  
 
-def p_BREAK_STATEMENT(t):
+def p_BREAK_STATEMENT(p):
     ''' BREAK_STATEMENT : BREAK SEMICOLON
                     '''
-    t[0]=('BREAK')
+    # p[0]=('BREAK')
+    p[0] = {'NODE_TYPE':'BREAK_STATEMENT', 'VALUE':'BREAK'}
+    
 
 
 
-def p_EXPRESSION (t):
-    ''' EXPRESSION : DIFF_ID EQUALS EXPRESSION
-                    | DIFF_ID PLUSPLUS
-                    | DIFF_ID MINUSMINUS
-                    | DIFF_ID PLUS_EQUAL EXPRESSION
-                    | DIFF_ID MINUS_EQUAL EXPRESSION
+def p_EXPRESSION (p):
+    ''' EXPRESSION : DATA_OBJECT EQUALS EXPRESSION
+                    | DATA_OBJECT PLUSPLUS
+                    | DATA_OBJECT MINUSMINUS
+                    | DATA_OBJECT PLUS_EQUAL EXPRESSION
+                    | DATA_OBJECT MINUS_EQUAL EXPRESSION
+                    | DATA_OBJECT NOR_EQUAL EXPRESSION
                     | SIMPLE_EXPRESSION
-                    | DIFF_ID NOR_EQUAL EXPRESSION
                     '''
-    if(len(t)==4):
-         t[0] = (t[2],t[1],t[3])   
+    # if(len(p)==4):
+    #      p[0] = (p[2],p[1],p[3])   
 
-    elif(len(t)==3):
-        t[0] = (t[2],t[1])
+    # elif(len(p)==3):
+    #     p[0] = (p[2],p[1])
+
+    # else:
+    #     p[0] = p[1]
+    if(len(p)==4):
+        if (p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR!!: '",p[2],"' can\'t operate between ", p[1]['TYPE'], " and ",  p[3]['TYPE']
+            sys.exit()
+        p[0]= {'NODE_TYPE':'EXPRESSION','LEFT_EXPR': p[1], 'OPERATOR' : p[2], 'RIGHT_EXPR':p[3], 'TYPE' : p[1]['TYPE']}
+
+        
+    elif(len(p)==3):
+        p[0]= {'NODE_TYPE':'EXPRESSION','LEFT_EXPR': p[1] ,'OPERATOR' : p[2],'TYPE': p[1]['TYPE']}
 
     else:
-        t[0] = t[1]
+        p[0]={'NODE_TYPE':'EXPRESSION', 'EXPRESSION': p[1] ,'OPERATOR':'','TYPE': p[1]['TYPE']}
+        
 
-def p_SIMPLE_EXPRESSION (t):
-    ''' SIMPLE_EXPRESSION : ANDOP_EXPRESSION
-                            | SIMPLE_EXPRESSION OR ANDOP_EXPRESSION
+
+def p_SIMPLE_EXPRESSION (p):
+    ''' SIMPLE_EXPRESSION : SIMPLE_EXPRESSION OR ANDOP_EXPRESSION
+                            | ANDOP_EXPRESSION
+                            
                             '''
-    if(len(t)==4):
-        t[0] = (t[2][0],t[1],t[3])
+    # if(len(p)==4):
+    #     p[0] = (p[2][0],p[1],p[3])
+
+    # else:
+    #     p[0] = p[1]
+    # #    
+    if(len(p)==4):
+        if(p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR!!: " , p[1]['TYPE'], " not same as ", p[3]['TYPE']
+            sys.exit()
+        p[0]={'NODE_TYPE':'SIMPLE_EXPRESSION','OPERATOR':'or','LEFT_EXPR':p[1], 'RIGHT_EXPR':p[3], 'TYPE':p[1]['TYPE']}
 
     else:
-        t[0] = t[1]
-    #print t[0]    
+        p[0]={'NODE_TYPE':'SIMPLE_EXPRESSION','OPERATOR':'','EXPRESSION':p[1],'TYPE':p[1]['TYPE']}
+        
 
 
-def p_ANDOP_EXPRESSION (t):
+def p_ANDOP_EXPRESSION (p):
     ''' ANDOP_EXPRESSION : ANDOP_EXPRESSION AND UNARY_RELATION_EXPRESSION
                         | UNARY_RELATION_EXPRESSION
                         '''
-    if(len(t)==4):
-        t[0] = (t[2][0],t[1],t[3])
+    # if(len(p)==4):
+    #     p[0] = (p[2][0],p[1],p[3])
+    # else:
+    #     p[0] = p[1]
+    # #    
+    if(len(p)==4):
+        if(p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR: " , p[1]['TYPE'], " is not equal to ", p[3]['TYPE']
+            sys.exit()
+        p[0]={'NODE_TYPE':'ANDOP_EXPRESSION','OPERATOR':'and','LEFT_EXPR':p[1], 'RIGHT_EXPR':p[3], 'TYPE':p[1]['TYPE']}
     else:
-        t[0] = t[1]
-    #print t[0]    
+        p[0]={'NODE_TYPE':'ANDOP_EXPRESSION','OPERATOR':'','EXPRESSION':p[1],'TYPE':p[1]['TYPE']}
+        
 
 
-def p_UNARY_RELATION_EXPRESSION(t):
+
+def p_UNARY_RELATION_EXPRESSION(p):
     '''UNARY_RELATION_EXPRESSION : NOT UNARY_RELATION_EXPRESSION
                             | RELATIONAL_EXPRESSION
                             '''
-    if(len(t) == 3):
-        t[0] = t[2]
+    # if(len(p) == 3):
+    #     p[0] = p[2]
+    # else:
+    #     p[0] = p[1]
+    if(len(p) == 3):
+        p[0] = {'NODE_TYPE':'UNARY_RELATION_EXPRESSION','OPERATOR':'not','EXPRESSION':p[2], 'TYPE':p[2]['TYPE']}
     else:
-        t[0] = t[1]
+        p[0] = {'NODE_TYPE':'UNARY_RELATION_EXPRESSION','OPERATOR':'','EXPRESSION':p[1], 'TYPE':p[1]['TYPE']}
+        
 
-
-def p_RELATIONAL_EXPRESSION (t):
+def p_RELATIONAL_EXPRESSION (p):
     ''' RELATIONAL_EXPRESSION : SUM_EXPRESSION LESSER SUM_EXPRESSION
                         | SUM_EXPRESSION GREATER SUM_EXPRESSION
                         | SUM_EXPRESSION LESSER_EQUAL SUM_EXPRESSION
@@ -494,60 +566,93 @@ def p_RELATIONAL_EXPRESSION (t):
                         | SUM_EXPRESSION EQUAL_EQUAL SUM_EXPRESSION
                         | SUM_EXPRESSION
                         '''
-    if(len(t)==4):
-        t[0] = (t[2][0],t[1],t[3])
+    # if(len(p)==4):
+    #     p[0] = (p[2][0],p[1],p[3])
+    # else:
+    #     p[0] = p[1]
+
+    if(len(p)==4):
+        if(p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR: " , p[1]['TYPE'], " is not equal to ", p[3]['TYPE'], "  NODE_TYPE: RELATIONAL_EXPRESSION"
+            sys.exit()
+        #print p[3]
+        p[0]={'NODE_TYPE':'RELATIONAL_EXPRESSION','OPERATOR':p[3]['OPERATOR'],'LEFT_SUM_EXPR':p[1], 'RIGHT_SUM_EXPR':p[3], 'TYPE':'bool'}
     else:
-        t[0] = t[1]
+        p[0]={'NODE_TYPE':'RELATIONAL_EXPRESSION','OPERATOR':'','EXPRESSION':p[1],'TYPE':p[1]['TYPE']}
+        
 
 
-def p_SUM_EXPRESSION(t):
+def p_SUM_EXPRESSION(p):
     ''' SUM_EXPRESSION : SUM_EXPRESSION PLUS term
                         | SUM_EXPRESSION MINUS term
                         | SUM_EXPRESSION BITWISENOR term 
                         | term
                         '''
-    if(len(t) == 4):
-        t[0] = (t[2][0],t[1],t[3])
+    # if(len(p) == 4):
+    #     p[0] = (p[2][0],p[1],p[3])
+    # else:
+    #     p[0] = p[1]
+    #    
+    if(len(p) == 4):
+        if(p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR!!: In SUM_EXPRESSION " , p[1]['TYPE'], "  ", p[3]['TYPE'] , " are different."
+            sys.exit()
+        p[0] = {'NODE_TYPE':'SUM_EXPRESSION', 'LEFT_EXPR':p[1], 'OPERATOR':p[2]  ,'RIGHT_EXPR':p[3],'TYPE':p[1]['TYPE']}
     else:
-        t[0] = t[1]
-    #print t[0]    
+        p[0] = {'NODE_TYPE':'SUM_EXPRESSION', 'OPERATOR':'','EXPRESSION':p[1],'TYPE':p[1]['TYPE']}
+        
 
-def p_term (t):
+def p_term (p):
     ''' term : term STAR UNARY_EXPRESSION
                 | term DIVIDE UNARY_EXPRESSION
                 | term MOD UNARY_EXPRESSION
                 | UNARY_EXPRESSION
                 '''
-    if(len(t) == 4):
-        t[0] = (t[2][0],t[1],t[3])
+    # if(len(p) == 4):
+    #     p[0] = (p[2][0],p[1],p[3])
+    # else:
+    #     p[0] = p[1]    
+    if(len(p) == 4):
+        if(p[1]['TYPE'] != p[3]['TYPE']):
+            print "ERROR!! in term: " , p[1]['TYPE'], " ", p[3]['TYPE'], "  are different."
+            sys.exit()
+        p[0] = {'NODE_TYPE':'term','LEFT_EXPR':p[1],'OPERATOR': p[2],'RIGHT_EXPR': p[3], 'TYPE':p[1]['TYPE']}
     else:
-        t[0] = t[1]    
+        p[0] = {'NODE_TYPE':'term','OPERATOR':'','EXPRESSION':p[1], 'TYPE':p[1]['TYPE']}
+        
 
 
-def p_UNARY_EXPRESSION(t):
+def p_UNARY_EXPRESSION(p):
     ''' UNARY_EXPRESSION : UNARY_OPERATOR UNARY_EXPRESSION
                         | factor
                         '''
-    if(len(t) == 3):
-        t[0] = (t[1][0],t[2])
+    # if(len(p) == 3):
+    #     p[0] = (p[1][0],p[2])
+    # else:
+    #     p[0] = p[1]
+    if(len(p) == 3):
+        p[0] = {'NODE_TYPE':'UNARY_EXPRESSION', 'factor':0,'OPERATOR':p[1]['OPERATOR'], 'EXPRESSION':p[2], 'TYPE':p[2]['TYPE']}
     else:
-        t[0] = t[1]
+        p[0] = {'NODE_TYPE':'UNARY_EXPRESSION','factor':1,'OPERATOR':'','EXPRESSION':p[1],'TYPE':p[1]['TYPE']}
+        
 
-def p_UNARY_OPERATOR(t):
+def p_UNARY_OPERATOR(p):
     '''UNARY_OPERATOR : MINUS
                 | STAR
                 '''
-    t[0] = t[1][0]
-    #print t[0]
+    p[0] = p[1][0]
+    #
     
-def p_factor(t):
-    ''' factor : DIFF_ID
+def p_factor(p):
+    ''' factor : DATA_OBJECT
                 | STRUCT_EXPR
                 '''
-    t[0] = t[1]
+    # p[0] = p[1]
+    p[0] = {'NODE_TYPE':'factor', 'SUBTYPE':p[1]['NODE_TYPE'],'EXPRESSION':p[1], 'TYPE': p[1]['TYPE']}
+    
 
-def p_DIFF_ID(t):
-    ''' DIFF_ID : IDENTIFIER
+def p_DATA_OBJECT(p):
+    ''' DATA_OBJECT : IDENTIFIER
                 | IDENTIFIER LEFTBRACKET EXPRESSION RIGHTBRACKET
                 | IDENTIFIER LEFTBRACKET EXPRESSION RIGHTBRACKET LEFTBRACKET EXPRESSION RIGHTBRACKET
                 | IDENTIFIER LEFTBRACKET INT_CONSTANT DOT DOT INT_CONSTANT RIGHTBRACKET
@@ -555,110 +660,165 @@ def p_DIFF_ID(t):
                 |  IDENTIFIER DOT IDENTIFIER
                 '''
     # print 'sahil'            
-    if(len(t) == 2):
-        t[0] = t[1]
+    # if(len(p) == 2):
+    #     p[0] = p[1]
 
-    elif (len(t) == 5 or len(t) == 4 ):
-        t[0] = (t[1],t[3])
+    # elif (len(p) == 5 or len(p) == 4 ):
+    #     p[0] = (p[1],p[3])
+    # else:
+    #     p[0]=(p[1],p[3],p[6])
+    #    
+    check = currentSymbolTable.lookup(p[1])
+
+    if(check == False):
+        check = parametersymboltable.lookup(p[1])
+        if(check == False):
+            print "ERROR!!: in DATA_OBJECT ",  p[1] , " not declared: ",
+            sys.exit()
+
+    tpe = check['attributes']['TYPE']
+    offset = check['offset']
+    scope = check['attributes']['SCOPETYPE']
+    table = check['TABLE']
+    static = check['attributes']['STATIC']
+    if(len(p) == 2):
+        p[0] = {'NODE_TYPE':'DATA_OBJECT','IDENTIFIER':p[1],'TYPE':tpe,'ARRAY_DIMENTION':0, 'OFFSET':offset,'SCOPETYPE':scope,'TABLE':table,'STATIC':static}
+
+    elif (len(p) == 5):
+        p[0] = {'NODE_TYPE':'DATA_OBJECT', 'IDENTIFIER':p[1], 'TYPE': tpe,'ARRAY_DIMENTION':1,'EXPRESSION':p[3], 'OFFSET':offset,'SCOPETYPE':scope,'TABLE':table,'STATIC':static}
     else:
-        t[0]=(t[1],t[3],t[6])
-    #print t[0]    
+        p[0] = {'NODE_TYPE':'DATA_OBJECT', 'IDENTIFIER':p[1],'INDEX1':check['attributes']['INDEX1'],'INDEX2':check['attributes']['INDEX2'], 'TYPE': tpe,'ARRAY_DIMENTION':2,'EXPRESSION1':p[3],'EXPRESSION2':p[6], 'OFFSET':offset,'SCOPETYPE':scope,'TABLE':table,'STATIC':static}
+        
 
-def p_STRUCT_EXPR(t):
+def p_STRUCT_EXPR(p):
     ''' STRUCT_EXPR : LEFTPAR EXPRESSION RIGHTPAR
                     | LEFTBRACKET LIST_OF_CONSTANTS RIGHTBRACKET
                     | CONSTANT
                     | FUNCTION_INSTANCE                    
                     '''
-    if(len(t) == 4):
-        t[0] = t[2]
+    # if(len(p) == 4):
+    #     p[0] = p[2]
+    # else:
+    #     p[0] = p[1]
+    if(len(p) == 4):
+        p[0] = {'NODE_TYPE':'STRUCT_EXPR', 'SUBTYPE':'bracketExpression','EXPRESSION':p[2], 'BRACKETED':1, 'TYPE':p[2]['TYPE']}
+    elif(p[1]['NODE_TYPE'] == 'FUNCTION_INSTANCE'):
+        p[0] = {'NODE_TYPE':'STRUCT_EXPR', 'SUBTYPE':'FUNCTION_INSTANCE','IDENTIFIER':p[1]['IDENTIFIER'], 'ARGS':p[1]['ARGS'], 'TYPE':p[1]['TYPE']}
     else:
-        t[0] = t[1]
+        p[0] = {'NODE_TYPE':'STRUCT_EXPR', 'SUBTYPE':'CONSTANT','VALUE':p[1]['VALUE'], 'TYPE':p[1]['TYPE']}
+        
 
-def p_FUNCTION_INSTANCE (t):
+
+def p_FUNCTION_INSTANCE (p):
     ''' FUNCTION_INSTANCE : IDENTIFIER LEFTPAR FUNC_ARGUMENTS RIGHTPAR
             '''
-    t[0] = {'NODE_TYPE':'call', 'IDENTIFIER':t[1], 'ARGS':t[3], 'TYPE':''}
-    # global FUNCTION_PROTOTYPE_DECLARATION
-    # flag = 0
-    # if(t[1] != 'printf' and t[1] != 'scanf'):
-    #     for func in FUNCTION_PROTOTYPE_DECLARATION :
-    #             if(t[1] in func['NAME']):
-    #                 flag=1
-    #                 t[0]['TYPE'] = func['OUTPUT']
-    #                 break
-    #     if(flag == 0):
-    #         print t[1],"Function is Undeclared"
-    #         sys.exit()
-    #     else :
-    #         if(not(len(t[3]) == len(func['INPUT']))):
-    #             print t[3]
-    #             print func
-    #             print "NUMBER OF ARGUMENTS OF FUNCTION DO NOT MATCH WITH THE GIVEN NUMBER OF ARGUMENTS"
-    #             sys.exit()
-    #         count = 0
-    #         for x in func['INPUT']:
-    #             if(t[3][count]['TYPE'] != x['TYPE']):
-    #                 print "ARGUMENT TYPES DO NOT MATCH for function", func['NAME']
-    #                 sys.exit()
+    p[0] = {'NODE_TYPE':'FUNCTION_INSTANCE', 'IDENTIFIER':p[1], 'ARGS':p[3], 'TYPE':''}
+    global FUNCTION_PROTOTYPES
+    flag = 0
+    if(p[1] != 'writefln' and p[1] != 'readf' and  p[1] != 'write'  ):
+        for f in FUNCTION_PROTOTYPES :
+                if(p[1] in f['FUNC_NAME']):
+                    flag=1
+                    p[0]['TYPE'] = f['OUTPUT']
+                    break
+        if(flag == 0):
+            print p[1],"Function not Declared!!"
+            sys.exit()
+        else :
+            if(not(len(p[3]) == len(f['INPUT']))):
+                print p[3]
+                print f
+                print "NUMBER OF ARGUMENTS OF FUNCTION DO NOT MATCH WITH THE GIVEN NUMBER OF ARGUMENTS"
+                sys.exit()
+            count = 0
+            for var in f['INPUT']:
+                if(p[3][count]['TYPE'] != var['TYPE']):
+                    print "ARGUMENT TYPES DO NOT MATCH for function", f['NAME']
+                    sys.exit()
 
-def p_FUNC_ARGUMENTS(t):
+def p_FUNC_ARGUMENTS(p):
     ''' FUNC_ARGUMENTS : LIST_OF_FUNCTION_ARGUMENTS
             |
             '''
-    if(len(t) == 2):
-        t[0] = t[1]
+    if(len(p) == 2):
+        p[0] = p[1]
     else:
-        t[0] = []
-    # print t[0]    
-    #print t[0]
+        p[0] = []
+    #     
+    #
     
         
-def p_LIST_OF_FUNCTION_ARGUMENTS(t):
+def p_LIST_OF_FUNCTION_ARGUMENTS(p):
     ''' LIST_OF_FUNCTION_ARGUMENTS : LIST_OF_FUNCTION_ARGUMENTS COMMA EXPRESSION
                     | EXPRESSION
                     '''
-    if(len(t) == 4):
-        t[0] = t[1] + [t[3]]
+    if(len(p) == 4):
+        p[0] = p[1] + [p[3]]
     else:
-        t[0] = [t[1]]
-    # print t[0]    
+        p[0] = [p[1]]
+    #     
 
-def p_LIST_OF_CONSTANTS(t):
+def p_LIST_OF_CONSTANTS(p):
     ''' LIST_OF_CONSTANTS : STRING_CONSTANT COLON SIMPLE_EXPRESSION COMMA LIST_OF_CONSTANTS
                             | STRING_CONSTANT COLON SIMPLE_EXPRESSION
                     '''
-    t[0] = t[1]   
+    p[0] = p[1]   
 
-def p_CONSTANT(t):
+def p_CONSTANT(p):
     ''' CONSTANT : INT_CONST
                     | FLOAT_CONST
                     | CHAR_CONST
                     | STR_CONST
                     '''
-    t[0] = t[1]               
-
-def p_INT_CONST(t):
+    # p[0] = p[1]               
+    p[0] = {'NODE_TYPE':'CONSTANT','VALUE':p[1]['VALUE'], 'TYPE':p[1]['TYPE']}
+    
+def p_INT_CONST(p):
     ''' INT_CONST : INT_CONSTANT
                 '''
-    t[0] = t[1]           
+    p[0] ={'NODE_TYPE':'INT_CONST','TYPE':'int','VALUE':p[1]}
+    
+    # p[0] = p[1]           
 
-def p_FLOAT_CONST (t):
+def p_FLOAT_CONST (p):
     ''' FLOAT_CONST : FLOAT_CONSTANT
                 '''
-    t[0] = t[1]
+    # p[0] = p[1]
+    p[0] = {'NODE_TYPE':'FLOAT_CONST','TYPE':'float','VALUE':p[1]}
 
-def p_STR_CONST (t):
+def p_STR_CONST (p):
     ''' STR_CONST : STRING_CONSTANT
                 '''
-    t[0] = t[1]
+    # p[0] = p[1]
+    p[0] ={'NODE_TYPE':'STR_CONST','TYPE':'string','VALUE':p[1]}
+    
+def p_LEFTBRACES(p):
+    ''' LEFTBRACES : LEFTBRACE
+                    '''
+    p[0] = p[1]
+    #print "-----Making NewSymbolTable---------"
+    global currentSymbolTable
+    currentSymbolTable = SymbolTable(currentSymbolTable)
+    print p[0]
+
+def p_RIGHTBRACES(p):
+    ''' RIGHTBRACES : RIGHTBRACE
+                    '''
+    p[0] = p[1]
+    #print "--------EXITING CURRENT SYMBOL TABLE--------------"
+    global currentSymbolTable
+    print p[0]
+    currentSymbolTable = currentSymbolTable.father
+
  
-def p_CHAR_CONST (t):
+def p_CHAR_CONST (p):
     ''' CHAR_CONST : CHAR_CONSTANT
                 '''
-    t[0]=t[1]
+    # p[0]=p[1]
+    p[0] ={'NODE_TYPE':'CHARCTER_CONST','TYPE':'char','VALUE':p[1]}
+    
 
-def p_error(t):
+def p_error(p):
     print "Parse Time Error!! at token",t.type," ", t.value," ", t.lineno
 
 
@@ -669,5 +829,6 @@ logging.basicConfig(
 )
 
 parser = yacc.yacc()
-data ='void print( immutable int[] array){int[string] days = ["MONDAY" : 0 , "TUE" : 1]; double[3][3] matrix; p[0..2] =3; a = b~ c ; a = b ~ c[0..0]; }'
+data =' int main (){   int i = 2+4 ; for(i=0 ; i<10 ; i++)   {      writefln("This loop will run forever.");  }    return 0; }'
+
 print parser.parse(data, debug=logging.getLogger())
