@@ -97,7 +97,7 @@ def print_table(obj):
 
 
 def p_startProgram(p):
-    ''' Program : LIST_OF_DECLARATIONS
+    ''' Program : LIST_OF_STATEMENTS
                 '''
     p[0] = p[1]
     print_all(p[0])
@@ -112,52 +112,36 @@ def p_startProgram(p):
     print_table(global_scope)
     pass
 
-
-def p_LIST_OF_DECLARATIONS(p):
-    '''LIST_OF_DECLARATIONS : LIST_OF_DECLARATIONS DECLARATION
-                        | DECLARATION
-                        '''                        
-    n = Node('LIST_OF_DECLARATIONS')                    
-    if(len(p)==3):
+def p_LIST_OF_STATEMENTS(p):
+    ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
+                        | STATEMENT
+                        '''
+    if(len(p)== 3):
+        n = Node('STATEMENTS1')
         n.add_child(p[1])
         n.add_child(p[2])
         p[0] = n
         p[0].code = p[1].code + p[2].code
-        pass
-    else:        
-        n.add_child(p[1])
-        p[0] = n
+    else:
+        p[0] = p[1]
         p[0].code = p[1].code
+        p[0].next = p[1].next
 
-
-def p_DECLARATION(p):
-    ''' DECLARATION : VARIABLE_DECLARATION
+def p_STATEMENT(p):
+    ''' STATEMENT : EXPRESSION_STATEMENT                    
+                    | DECISION_STATEMENT
+                    | LOOP_STATEMENT
+                    | RETURN_STATEMENT
+                    | BREAK_STATEMENT 
+                    | VARIABLE_DECLARATION
                     | FUNCTION_DECL
                     | VARIABLE_DEF
                     | TEMPLATES
-
+                                       
                     '''
     p[0] = p[1]
     p[0].code = p[1].code
-# p[0] = p[1]
-# p[0].code = p[1].code
-# p[0].next = p[1].next
-
-def p_TEMPLATES(p):
-    ''' TEMPLATES : VARIABLE_TYPE IDENTIFIER LEFTPAR TEMP_PARAMETERS_TYPE RIGHTPAR LEFTPAR LIST_OF_TEMP_PARAMETERS RIGHTPAR  STATEMENT
-    '''
-
-def p_TEMP_PARAMETERS_TYPE(p):
-    ''' TEMP_PARAMETERS_TYPE : TEMP_PARAMETERS_TYPE COMMA IDENTIFIER
-                    | IDENTIFIER
-                    '''
-
-
-def p_LIST_OF_TEMP_PARAMETERS(p):
-    ''' LIST_OF_TEMP_PARAMETERS : LIST_OF_TEMP_PARAMETERS COMMA IDENTIFIER IDENTIFIER
-                    | IDENTIFIER IDENTIFIER
-    '''
-
+    p[0].next = p[1].next
 
 #----------------------------------------------------------------
 
@@ -303,33 +287,23 @@ def p_LIST_OF_PARAMETERS (p):
 #                         | IMMUTABLE VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER 
                         
 #                         '''
-########## RULE STILL REMAINING ########################
-def p_LIST_OF_STATEMENTS(p):
-    ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
-                        | STATEMENT
-                        '''
-    if(len(p)== 3):
-        n = Node('STATEMENTS1')
-        n.add_child(p[1])
-        n.add_child(p[2])
-        p[0] = n
-        p[0].code = p[1].code + p[2].code
-    else:
-        p[0] = p[1]
-        p[0].code = p[1].code
-        p[0].next = p[1].next
 
-def p_STATEMENT(p):
-    ''' STATEMENT : EXPRESSION_STATEMENT                    
-                    | DECISION_STATEMENT
-                    | LOOP_STATEMENT
-                    | RETURN_STATEMENT
-                    | BREAK_STATEMENT 
-                    | VARIABLE_DECLARATION                   
+def p_TEMPLATES(p):
+    ''' TEMPLATES : VARIABLE_TYPE IDENTIFIER LEFTPAR TEMP_PARAMETERS_TYPE RIGHTPAR LEFTPAR LIST_OF_TEMP_PARAMETERS RIGHTPAR  STATEMENT
+    '''
+
+def p_TEMP_PARAMETERS_TYPE(p):
+    ''' TEMP_PARAMETERS_TYPE : TEMP_PARAMETERS_TYPE COMMA IDENTIFIER
+                    | IDENTIFIER
                     '''
-    p[0] = p[1]
-    p[0].code = p[1].code
-    p[0].next = p[1].next
+
+
+def p_LIST_OF_TEMP_PARAMETERS(p):
+    ''' LIST_OF_TEMP_PARAMETERS : LIST_OF_TEMP_PARAMETERS COMMA IDENTIFIER IDENTIFIER
+                    | IDENTIFIER IDENTIFIER
+    '''
+
+########## RULE STILL REMAINING ########################
 
 def p_EXPRESSION_STATEMENT(p):
     ''' EXPRESSION_STATEMENT : EXPRESSION SEMICOLON
@@ -337,7 +311,7 @@ def p_EXPRESSION_STATEMENT(p):
                         '''
     n = Node('EXPRESSION_STATEMENT')
     n.add_child(p[1])
-    n.add_child(Node(p[2]))
+    n.add_child(Node(p[2][0]))
     p[0] = n
     p[0].code = p[1].code                        
           
@@ -365,9 +339,9 @@ def p_FOR_LOOP(p):
         n.add_child(Node(p[1]))
         n.add_child(Node(p[2]))
         n.add_child(p[3])
-        n.add_child(Node(p[4]))
+        n.add_child(Node(p[4][0]))
         n.add_child(p[5])
-        n.add_child(Node(p[6]))
+        n.add_child(Node(p[6][0]))
         n.add_child(p[7])
         n.add_child(Node(p[8]))
         n.add_child(p[9])
@@ -385,9 +359,9 @@ def p_FOR_LOOP(p):
         n.add_child(Node(p[1]))
         n.add_child(Node(p[2]))
         n.add_child(p[3])
-        n.add_child(Node(p[4]))
+        n.add_child(Node(p[4][0]))
         n.add_child(p[5])
-        n.add_child(Node(p[6]))
+        n.add_child(Node(p[6][0]))
         n.add_child(p[7])
         n.add_child(Node(p[8]))
         n.add_child(p[9])
@@ -405,12 +379,12 @@ def p_FOR_LOOP(p):
         n.add_child(Node(p[1]))
         n.add_child(Node(p[2]))
         n.add_child(p[3])
-        n.add_child(Node(p[4]))
+        n.add_child(Node(p[4][0]))
         n.add_child(p[5])
-        n.add_child(Node(p[6]))
+        n.add_child(Node(p[6][0]))
         n.add_child(p[7])
         n.add_child(Node(p[8]))
-        n.add_child(Node(p[9]))
+        n.add_child(Node(p[9][0]))
         p[0] = n
         global labels
         labels += 1
@@ -431,7 +405,7 @@ def p_WHILE_LOOP(p):
         n.add_child(Node(p[2]))
         n.add_child(p[3])
         n.add_child(Node(p[4]))
-        n.add_child(p[5])
+        n.add_child(p[5][0])
         p[0] = n
         global labels
         labels += 1
@@ -496,10 +470,12 @@ def p_VARIABLE_DECLARATION(p):
             current_scope.variables[i]['offset'] = offset
             if not current_scope.variables[i]['size']==-1:
                 offset += type_size[p[1].data]
-    p[0] = n    
+    p[0] = n
+    p[0].code =  p[2].code
+    p[0].next =  p[2].next    
 
 def p_LISTOF_VAR_DECLARATIONS(p):
-    '''LISTOF_VAR_DECLARATIONS : LISTOF_VAR_DECLARATIONS COMMA VAR_INITIALIZE
+    '''LISTOF_VAR_DECLARATIONS : VAR_INITIALIZE COMMA LISTOF_VAR_DECLARATIONS 
                     | VAR_INITIALIZE
                     '''
     if(len(p)==4):
@@ -509,34 +485,28 @@ def p_LISTOF_VAR_DECLARATIONS(p):
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        n.add_child(Node(p[1]))
+        n.add_child(p[1])
         n.add_child(Node(p[2]))
         n.add_child(p[3])
         p[0] = n
         p[0].code = p[3].code
+        p[0].next =  p[3].next 
     else:
         p[0] = p[1]
         p[0].code = p[1].code
+        p[0].next = p[1].next
 
 def p_VAR_INITIALIZE(p):
     '''VAR_INITIALIZE : VAR_DECLARATION_ID
                             |  VAR_DECLARATION_ID EQUALS EXPRESSION 
                             '''
     if(len(p)==4):
-        n = Node('VAR_INITIALIZE')
-        global current_scope, errors
-        new_var = current_scope.add_variable(p[1], 'NA')
-        if(not new_var):
-            errors += 1
-            print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        x = Node(p[2])
-        x.add_child(Node(p[1]))
-        x.add_child(p[3])
-        n.add_child(x)
+        n = Node(p[2][0])
+        n.add_child(p[1])
+        n.add_child(p[3])
         p[0] = n
-        print p[1]
-        p[0].code = p[1].code + " = " + p[3].code + ";\n"    
-
+        p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].code+ " = _x1;\n"
+        p[0].next = p[3].next
     else:
         p[0] = p[1]
         p[0].code = p[1].code
@@ -615,14 +585,14 @@ def p_RETURN_STATEMENT(p):
     if(len(p)==3):                    
         n = Node('RETURN_STATEMENT1')    
         n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
+        n.add_child(Node(p[2][0]))
         p[0] = n
         p[0].code = 'return ' + ";\n"                    
     else:
         n = Node('RETURN_STATEMENT2')
         n.add_child(Node(p[1]))
         n.add_child(p[2])
-        n.add_child(Node(p[3]))
+        n.add_child(Node(p[3][0]))
         p[0] = n
         p[0].code = p[2].code + "\n_x1 = " + p[2].place + ";\nreturn _x1;\n"
         p[0].next = p[2].next   
@@ -632,7 +602,7 @@ def p_BREAK_STATEMENT(p):
                     '''
     n = Node('BREAK_STATEMENT')
     n.add_child(Node(p[1]))
-    n.add_child(Node(p[2]))
+    n.add_child(Node(p[2][0]))
     p[0] = n
     p[0].code = 'break ' + ";\n"    
 
@@ -661,7 +631,7 @@ def p_EXPRESSION (p):
         p[0].next = p[1].next        
 
     elif(len(p)==4):
-        n = Node(p[2])
+        n = Node(p[2][0])
         n.add_child(p[1])
         n.add_child(p[3])
         p[0] = n
@@ -1086,13 +1056,13 @@ def p_error(p):
 import logging
 logging.basicConfig(
     level=logging.INFO,
-    filename="parselog.txt"
++    filename="parselog.txt"
 )
 
 
 parser = yacc.yacc()
 data =' int main (){   int i = 2+4 ; for(i=0 ; i<10 ; i++)   {      writefln("This loop will run forever.");  }    return 0; }'
-data1 = '   int a = 1 ;   int b = 1,c=3+9; ++a; fhg % 5; a=(5+z++);'
+data1 = 'for(i = 1 ; i< 5 ;i++){ int b; b = i*b;}  '
 
 print parser.parse(data1, debug=logging.getLogger())
 # print parser.parse(data, debug=logging.getLogger())
