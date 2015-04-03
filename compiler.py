@@ -77,21 +77,21 @@ def print_all(n):
         print_all(c)
 
 def print_table(obj):
-    print "\nPrinting table", obj.data
-    for j in obj.variables:
-        print j, ':', obj.variables[j]
-    print "Children of", obj.data, ":",
-    flag = False
-    for i in obj.child_tables:
-        flag = True
-        print i.data,
-    if(not flag):
-        print "No child\n"
-    else:
-        print " "
-    for i in obj.child_tables:
-        print_table(i)
-
+    # print "\nPrinting table", obj.data
+    # for j in obj.variables:
+    #     print j, ':', obj.variables[j]
+    # print "Children of", obj.data, ":",
+    # flag = False
+    # for i in obj.child_tables:
+    #     flag = True
+    #     print i.data,
+    # if(not flag):
+    #     print "No child\n"
+    # else:
+    #     print " "
+    # for i in obj.child_tables:
+    #     print_table(i)
+    i = 0
 
 #--------------------yacc grammer rule for d programming langugage-------#
 
@@ -143,6 +143,7 @@ def p_STATEMENT(p):
     p[0].code = p[1].code
     p[0].next = p[1].next
 
+
 #----------------------------------------------------------------
 
 def p_FUNCTION_DECL(p):
@@ -152,9 +153,10 @@ def p_FUNCTION_DECL(p):
                         | REF VARIABLE_TYPE IDENTIFIER LEFTPAR LIST_OF_PARAMETERS RIGHTPAR STATEMENT 
                         | AUTO IDENTIFIER LEFTPAR LIST_OF_PARAMETERS RIGHTPAR STATEMENT   
                         | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR STATEMENT  
-                '''
+                '''                
     if(len(p) == 9 ):
         n = Node('FUNCTION_DECL')
+
         global global_scope, current_scope, errors
         if not (global_scope == current_scope):
             errors += 1
@@ -174,13 +176,14 @@ def p_FUNCTION_DECL(p):
         n.add_child(p[8])
         p[0] = n
         # a = p[7].code
-        p[0].code = "\n" + p[2] + "_begin:" + p[4].code + "\n" + p[4].code + "\n" + p[7].code + "\nreturn;\n\n"
+        print 'sasds', p[4].code
+        p[0].code = "\n" + p[2] + "_begin: " + p[4].code + "\n" + p[4].code + "\n" + p[7].code + "\nreturn;\n\n"
         p[0].next = p[7].next        
 
     elif(len(p)==8):
-        if(p[1]=='PURE' or 'REF'):
+        if(1==2):
             i = 0
-        elif(p[6]== 'NOTHROW'):
+        elif(1==5):
             i = 0
         else:
             n = Node('FUNCTION_DECL2')
@@ -210,6 +213,7 @@ def p_FUNCTION_DECL(p):
     else:
         i = 0
 
+
 def p_FUNCTION_DECL2(p):
     ''' FUNCTION_DECL :  IDENTIFIER LEFTPAR LIST_OF_PARAMETERS RIGHTPAR  LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES
                         | IDENTIFIER LEFTPAR RIGHTPAR  LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES                        
@@ -234,7 +238,7 @@ def p_FUNCTION_DECL2(p):
         n.add_child(p[6])
         n.add_child(p[7])
         p[0] = n
-        p[0].code = "\n" + p[1] + "_begin:" + p[3].code + "\n" + p[6].code + "\nreturn;\n\n"
+        p[0].code = "\n" + p[1] + "_begin: " + p[3].code + "\n" + p[6].code + "\nreturn;\n\n"
         p[0].next = p[6].next                    
 
     else:
@@ -267,7 +271,7 @@ def p_LIST_OF_PARAMETERS (p):
         n.add_child(p[1])
         n.add_child(Node(p[2]))
         p[0] = n
-        p[0].code = p[1].place + p[2]
+        p[0].code = p[1].place + " " + p[2]
 
     elif(len(p)==5):
         n = Node('PARAMETERS2')
@@ -316,6 +320,8 @@ def p_EXPRESSION_STATEMENT(p):
     p[0].code = p[1].code                        
     p[0].next = p[1].next          
 
+
+
 def p_DECISION_STATEMENT (p):
     '''DECISION_STATEMENT : IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
                         | IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT ELSE STATEMENT
@@ -330,11 +336,9 @@ def p_LOOP_STATEMENT(p):
 def p_FOR_LOOP(p):
     '''FOR_LOOP :       FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR STATEMENT
                         | FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES
-                        | FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR SEMICOLON                                             
-                        '''
-    p[0] = p[1]                        
-    p[0].code = p[1].code                        
+                        '''                      
     if(len(p)==10):
+                  
         n = Node('FOR_LOOP1')
         n.add_child(Node(p[1]))
         n.add_child(Node(p[2]))
@@ -345,11 +349,10 @@ def p_FOR_LOOP(p):
         n.add_child(p[7])
         n.add_child(Node(p[8]))
         n.add_child(p[9])
-
         p[0] = n
         global labels
         labels += 1
-        p[0].code = "\nlabel_" + labels + ":\n"+ p[9].code + "\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
+        p[0].code = "\nlabel_" + str(labels) + ":\n"+ p[9].code + "\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
         labels += 1
         p[0].code += p[3].code + "\ngoto label_"+ str(labels) + ";\nlabel_" + str(labels) + ":\n"  + "\nif" + p[5].code + "\n" + "\ngoto label_" + str(labels-1) + ";\ngoto " + str(p[3].next) + ";\n" 
         p[0].next = p[9].next
@@ -374,28 +377,33 @@ def p_FOR_LOOP(p):
         labels += 1
         p[0].code += p[3].code + "\ngoto label_"+ str(labels) + ";\nlabel_" + str(labels) + ":\n"  + "\nif" + p[5].code + "\n" + "\ngoto label_" + str(labels-1) + ";\ngoto " + str(p[3].next) + ";\n" 
         p[0].next = p[10].next
-    else:  
-        n = Node('FOR_LOOP3')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4][0]))
-        n.add_child(p[5])
-        n.add_child(Node(p[6][0]))
-        n.add_child(p[7])
-        n.add_child(Node(p[8]))
-        n.add_child(Node(p[9][0]))
-        p[0] = n
-        global labels
-        labels += 1
-        p[0].code = "\nlabel_" + str(labels) + ":\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
-        labels += 1
-        p[0].code += p[3].code + "\ngoto label_"+ str(labels) + ";\nlabel_" + str(labels) + ":\n"  + "\nif" + p[5].code + "\n" + "\ngoto label_" + str(labels-1) + ";\ngoto " + str(p[3].next) + ";\n" 
-        p[0].next = p[7].next
+
+
+def p_FOR_LOOP2(p):
+    '''FOR_LOOP :  FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR SEMICOLON                                  
+                        '''                      
+                          
+    n = Node('FOR_LOOP3')
+    n.add_child(Node(p[1]))
+    n.add_child(Node(p[2]))
+    n.add_child(p[3])
+    n.add_child(Node(p[4][0]))
+    n.add_child(p[5])
+    n.add_child(Node(p[6][0]))
+    n.add_child(p[7])
+    n.add_child(Node(p[8]))
+    n.add_child(Node(p[9][0]))
+    p[0] = n
+    global labels
+    labels += 1
+    p[0].code = "\nlabel_" + str(labels) + ":\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
+    labels += 1
+    p[0].code += p[3].code + "\ngoto label_"+ str(labels) + ";\nlabel_" + str(labels) + ":\n"  + "\nif" + p[5].code + "\n" + "\ngoto label_" + str(labels-1) + ";\ngoto " + str(p[3].next) + ";\n" 
+    p[0].next = p[7].next
+
 
 def p_WHILE_LOOP(p):
-    ''' WHILE_LOOP : 
-                        | WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
+    ''' WHILE_LOOP :     WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
                         | WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES
                         | WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR SEMICOLON
                         '''
@@ -458,7 +466,7 @@ def p_ENUM_VARIABLE_TYPE(p):
 def p_VARIABLE_DECLARATION(p):
     ''' VARIABLE_DECLARATION : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
         '''
-    n = Node('VARIABLE_DECLARATION')
+    n = Node('VARIABLE_DECLARATION')    
     n.add_child(p[1])
     n.add_child(p[2])
     n.add_child(Node(p[3]))
@@ -746,7 +754,8 @@ def p_RELATIONAL_EXPRESSION (p):
         p[0].code = p[1].code
         p[0].next = p[1].next        
     else:
-        if(p[2]=='LESSER'):
+        # print 'sahil22' , p[2]                       
+        if(p[2][1]=='LESSER'):
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -759,7 +768,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next
 
-        elif(p[2]=='GREATER'):
+        elif(p[2][1]=='GREATER'):
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -772,7 +781,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next
 
-        elif(p[2]=='LESSER_EQUAL'):
+        elif(p[2][1]=='LESSER_EQUAL'):
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -785,7 +794,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next
 
-        elif(p[2]=='GREATER_EQUAL'):
+        elif(p[2][1]=='GREATER_EQUAL'):
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -797,7 +806,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].code += "if _x1 < _x2 " + new_var + " = 0;\n" 
             p[0].place = new_var
             p[0].next = p[3].next    
-        elif(p[2]=='NOT_EQUAL'):
+        elif(p[2][1]=='NOT_EQUAL'):
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -810,7 +819,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next            
 
-        elif(p[2]=='EQUAL_EQUAL'):        
+        elif(p[2][1]=='EQUAL_EQUAL'):        
             n = Node(p[2])
             n.add_child(p[1])
             n.add_child(p[3])
@@ -822,11 +831,14 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].code += "if _x1 == _x2 " + new_var + " = 1;\n" 
             p[0].place = new_var
             p[0].next = p[3].next
-
+                
 def p_SUM_EXPRESSION(p):
-    ''' SUM_EXPRESSION : SUM_EXPRESSION PLUS term
-                        | SUM_EXPRESSION MINUS term                         
-                        | term
+    ''' SUM_EXPRESSION : SUM_EXPRESSION PLUS UNARY_EXPRESSION
+                        | SUM_EXPRESSION MINUS UNARY_EXPRESSION
+                        | SUM_EXPRESSION STAR UNARY_EXPRESSION
+                        | SUM_EXPRESSION DIVIDE UNARY_EXPRESSION
+                        | SUM_EXPRESSION MOD UNARY_EXPRESSION                         
+                        | UNARY_EXPRESSION
                         '''
     if(len(p)==2):
         p[0] = p[1]
@@ -846,40 +858,17 @@ def p_SUM_EXPRESSION(p):
             p[0].code += new_var + " = _x1 + _x2;\n"
         elif(p[2]=='MINUS'):
             p[0].code += new_var + " = _x1 - _x2;\n"
-        
-        p[0].place = new_var
-        p[0].next = p[3].next        
-
-def p_term (p):
-    ''' term : term STAR UNARY_EXPRESSION
-                | term DIVIDE UNARY_EXPRESSION
-                | term MOD UNARY_EXPRESSION
-                | UNARY_EXPRESSION
-                '''
-    if(len(p)==2):
-        p[0] = p[1]
-        p[0].code = p[1].code
-        p[0].next = p[1].next
-    else:        
-        n = Node(p[2])
-        n.add_child(p[1])
-        n.add_child(p[3])
-        p[0] = n
-        global mass
-        mass += 1
-        new_var = "_t" + str(mass)
-        p[0].code = p[1].code + "\n" + p[3].code + "\n_x1 = " + p[1].place + ";\n_x2 = " + p[3].place + ";\n"
-        if(p[2]=='STAR'):
+        elif(p[2]=='STAR'):
             p[0].code += new_var + " = _x1 * _x2;\n"
         elif(p[2]=='DIVIDE'):
             p[0].code += new_var + " = _x1 / _x2;\n"
         elif(p[2]=='MOD'):
             p[0].code += new_var + " = _x1 % _x2;\n"
-           
+        
         p[0].place = new_var
-        p[0].next = p[3].next
+        p[0].next = p[3].next 
 
-
+            
 def p_UNARY_EXPRESSION(p):
     ''' UNARY_EXPRESSION : UNARY_OPERATOR UNARY_EXPRESSION
                         | UNARY_EXPRESSION UNARY_OPERATOR 
@@ -895,28 +884,29 @@ def p_UNARY_EXPRESSION(p):
             n.add_child(p[1])
             n.add_child(Node(p[2]))
             p[0] = n
-            p[0].code = p[2] + " = " + p[2] + p[1].code
+            p[0].code = p[2].code + " = " + p[2].code + p[1].code
             p[0].place = p[2]
             p[0].next = p[1].next
+
         elif(p[2].code == " + 1;\n" or p[2].code == " - 1;\n"):  
             n = Node('UNARY_EXPRESSION2')
             n.add_child(Node(p[1]))
             n.add_child(p[2])
             p[0] = n
-            p[0].code = p[1] + " = " + p[1] + p[2].code
-            p[0].place = p[1] + p[2].place
+            p[0].code = p[1].code + " = " + p[1].code + p[2].code
+            p[0].place = p[1].place + p[2].place
             p[0].next = p[2].next
 
 def p_UNARY_OPERATOR(p):
     '''UNARY_OPERATOR : PLUSPLUS
                 | MINUSMINUS
                 '''
-    print 'PPPPPP'                
-    if(p[1]==PLUSPLUS):
+    # print 'PPPPPP'                
+    if(p[1][1]=='PLUSPLUS'):        
         p[0] = Node(p[1])
         p[0].code = " + 1;\n"
         p[0].place = ' - 1'    
-    elif(p[1] == MINUSMINUS):
+    elif(p[1][1] == 'MINUSMINUS'):
         p[0] = Node(p[1])
         p[0].code = " - 1;\n"
         p[0].place = ' + 1'
@@ -924,7 +914,7 @@ def p_UNARY_OPERATOR(p):
 
 def p_factor(p):
     ''' factor : DATA_OBJECT
-                | STRUCT_EXPR
+                | OTHER_EXPR
                 '''
     p[0] = p[1]
     p[0].code = p[1].code
@@ -962,8 +952,8 @@ def p_DATA_OBJECT(p):
         i = 0
 # CLASS FUNCTIONS NOT HANDLED
 
-def p_STRUCT_EXPR(p):
-    ''' STRUCT_EXPR : LEFTBRACKET LIST_OF_CONSTANTS RIGHTBRACKET
+def p_OTHER_EXPR(p):
+    ''' OTHER_EXPR : LEFTBRACKET LIST_OF_CONSTANTS RIGHTBRACKET
                     | CONSTANT                    
                     | FUNCTION_INSTANCE                    
         '''                    
@@ -1060,10 +1050,9 @@ logging.basicConfig(
     filename="parselog.txt"
 )
 
-
 parser = yacc.yacc()
-data ='''    for(i = 1 ; i < 5 ; i++){ int b = 1; b =b *i;}  '''
+data =''' int main(int c, int x) { int i , j=1,k=0 ; k = i+j; } '''
 data1 = ' int i = 2+4 ; '
 
-print parser.parse(data1, debug=logging.getLogger())
+print parser.parse(data, debug=logging.getLogger())
 # print parser.parse(data, debug=logging.getLogger())
