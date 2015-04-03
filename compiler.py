@@ -314,7 +314,7 @@ def p_EXPRESSION_STATEMENT(p):
     n.add_child(Node(p[2][0]))
     p[0] = n
     p[0].code = p[1].code                        
-          
+    p[0].next = p[1].next          
 
 def p_DECISION_STATEMENT (p):
     '''DECISION_STATEMENT : IF LEFTPAR SIMPLE_EXPRESSION RIGHTPAR STATEMENT
@@ -834,7 +834,7 @@ def p_SUM_EXPRESSION(p):
         p[0].next = p[1].next
 
     else:                    
-        n = Node(p[2])
+        n = Node(p[2][0])
         n.add_child(p[1])
         n.add_child(p[3])
         p[0] = n
@@ -911,6 +911,7 @@ def p_UNARY_OPERATOR(p):
     '''UNARY_OPERATOR : PLUSPLUS
                 | MINUSMINUS
                 '''
+    print 'PPPPPP'                
     if(p[1]==PLUSPLUS):
         p[0] = Node(p[1])
         p[0].code = " + 1;\n"
@@ -939,14 +940,14 @@ def p_DATA_OBJECT(p):
     if(len(p)==2):
         p[0] = Node(p[1])
         p[0].code = ""
-        p[0].place = p[1]
+        p[0].place = p[1][0]
 
     elif(len(p)==5): 
         n = Node('DATA_OBJECT1')
         n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
+        n.add_child(Node(p[2][0]))
         n.add_child(p[3])
-        n.add_child(Node(p[4]))
+        n.add_child(Node(p[4][0]))
         p[0] = n
         global mass
         mass += 1
@@ -1056,13 +1057,13 @@ def p_error(p):
 import logging
 logging.basicConfig(
     level=logging.INFO,
-+    filename="parselog.txt"
+    filename="parselog.txt"
 )
 
 
 parser = yacc.yacc()
-data =' int main (){   int i = 2+4 ; for(i=0 ; i<10 ; i++)   {      writefln("This loop will run forever.");  }    return 0; }'
-data1 = 'for(i = 1 ; i< 5 ;i++){ int b; b = i*b;}  '
+data ='''    for(i = 1 ; i < 5 ; i++){ int b = 1; b =b *i;}  '''
+data1 = ' int i = 2+4 ; '
 
 print parser.parse(data1, debug=logging.getLogger())
 # print parser.parse(data, debug=logging.getLogger())
