@@ -5,16 +5,13 @@ import ply.yacc as yacc
 tokens = dlex.tokens
 
 
-# precedence = (
-#  ('right','EQUALS','ADD_ASSIGN','MOD_ASSIGN','SUB_ASSIGN','MUL_ASSIGN','DIV_ASSIGN','LEFT_ASSIGN','RIGHT_ASSIGN','XOR_ASSIGN','OR_ASSIGN','AND_ASSIGN'),
-#  ('left','OR_OP','AND_OP'),
-#  ('left','NOTEQUALS','EQUALS_OP'),
-#  ('left','L_OP','G_OP','LE_OP','GE_OP'),
-#  ('left','ADD','MINUS'),
-#  ('left','MULT','DIV','MOD'),
-#  ('right', 'UELSE'),
-#  ('right', 'ELSE')
-# )
+precedence = (
+ ('right','EQUALS','PLUS_EQUAL','MINUS_EQUAL' ),
+ ('left','OR','AND'),
+ ('left','NOT_EQUAL','EQUAL_EQUAL'),
+ ('left','PLUS','MINUS'),
+ ('left','STAR','DIVIDE','MOD'),
+)
 
 class Table(object):
     def __init__(self, data):
@@ -40,15 +37,10 @@ class Table(object):
 class Node(object):
     def __init__(self, data):
         self.data = data
-        self.children = []
         self.code = ""
         self.next = "next"
         self.place = ""
         self.count = 0
-
-    def add_child(self, obj):
-        self.children.append(obj)
-
 
 mass = 0
 errors = 0
@@ -61,36 +53,6 @@ current_scope = global_scope
 tableux = 1
 
 i = 0
-f = open('3ac.dot','wb')
-f.write('strict digraph graphname {\n\n0 [label="program"]\n')
-def print_all(n):
-    global i
-    global f
-    ni = i
-    i = i+1
-    for c in n.children:
-        a = '{} {} {} {} \n'.format(i,'[label="',c.data,'"];')
-        f.write(a)
-        a = '{} {} {} {} \n'.format(ni,'->',i,';')
-        f.write(a)
-        print_all(c)
-
-def print_table(obj):
-    # print "\nPrinting table", obj.data
-    # for j in obj.variables:
-    #     print j, ':', obj.variables[j]
-    # print "Children of", obj.data, ":",
-    # flag = False
-    # for i in obj.child_tables:
-    #     flag = True
-    #     print i.data,
-    # if(not flag):
-    #     print "No child\n"
-    # else:
-    #     print " "
-    # for i in obj.child_tables:
-    #     print_table(i)
-    i = 0
 
 #--------------------yacc grammer rule for d programming langugage-------#
 
@@ -99,27 +61,20 @@ def p_startProgram(p):
     ''' Program : LIST_OF_STATEMENTS
                 '''
     p[0] = p[1]
-    print_all(p[0])
-    global f
-    f.write('\n\n}')
-    f.close()
     p[0].code = p[1].code
+
     f = open('3ac.mass','wb')
     f.write(p[0].code)
     f.close()
+
     global global_scope
-    print_table(global_scope)
-    pass
 
 def p_LIST_OF_STATEMENTS(p):
     ''' LIST_OF_STATEMENTS : LIST_OF_STATEMENTS STATEMENT
                         | STATEMENT
                         '''
     if(len(p)== 3):
-        n = Node('STATEMENTS1')
-        n.add_child(p[1])
-        n.add_child(p[2])
-        p[0] = n
+        p[0] = Node('STATEMENTS1')
         p[0].code = p[1].code + p[2].code
     else:
         p[0] = p[1]
@@ -155,7 +110,7 @@ def p_FUNCTION_DECL(p):
                         | VARIABLE_TYPE IDENTIFIER LEFTPAR VARIABLE_TYPE IDENTIFIER COMMA DOT DOT DOT RIGHTPAR STATEMENT  
                 '''                
     if(len(p) == 9 ):
-        n = Node('FUNCTION_DECL')
+        p[0] = Node('FUNCTION_DECL')
 
         global global_scope, current_scope, errors
         if not (global_scope == current_scope):
@@ -166,15 +121,6 @@ def p_FUNCTION_DECL(p):
             if(not new_var):
                 errors += 1
                 print "Error : line", t.lexer.lineno,": Function", p[2], "declared multiple times."
-        n.add_child(p[1])
-        n.add_child(Node(p[2]))
-        n.add_child(Node(p[3]))
-        n.add_child(p[4])
-        n.add_child(Node(p[5]))
-        n.add_child(p[6])
-        n.add_child(p[7])
-        n.add_child(p[8])
-        p[0] = n
         # a = p[7].code
         # print 'sasds', p[4].code
         p[0].code = "\n" + p[2] + "_begin: " + "\n" + p[4].code + "\n" + p[7].code + "\nreturn;\n\n"
@@ -186,7 +132,7 @@ def p_FUNCTION_DECL(p):
         elif(1==5):
             i = 0
         else:
-            n = Node('FUNCTION_DECL2')
+            p[0] = Node('FUNCTION_DECL2')
             global global_scope, current_scope, errors
             if not (global_scope == current_scope):
                 errors += 1
@@ -196,14 +142,7 @@ def p_FUNCTION_DECL(p):
                 if(not new_var):
                     errors += 1
                     print "Error : line", t.lexer.lineno, ": Function", p[2], "declared multiple times."
-            n.add_child(p[1])
-            n.add_child(Node(p[2]))
-            n.add_child(Node(p[3]))
-            n.add_child(Node(p[4]))
-            n.add_child(p[5])
-            n.add_child(p[6])
-            n.add_child(p[7])
-            p[0] = n
+        
             p[0].code = "\n" + p[2] + "_begin:\n" + p[6].code + "\nreturn;\n\n"
             p[0].next = p[6].next
 
@@ -221,7 +160,7 @@ def p_FUNCTION_DECL2(p):
                         | IDENTIFIER LEFTPAR RIGHTPAR  LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES                        
                     '''
     if(len(p)==8):                    
-        n = Node('FUNCTION_DECL')
+        p[0] = Node('FUNCTION_DECL')
         global global_scope, current_scope, errors
         if not (global_scope == current_scope):
             errors += 1
@@ -231,21 +170,13 @@ def p_FUNCTION_DECL2(p):
             if(not new_var):
                 errors += 1
                 print "Error : line", t.lexer.lineno, ": Function", p[1], "declared multiple times."
-        n.add_child(Node("VOID"))
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4]))
-        n.add_child(p[5])
-        n.add_child(p[6])
-        n.add_child(p[7])
-        p[0] = n
+        
         p[0].code = "\n" + p[1] + "_begin:\n " + p[3].code + "\n" + p[6].code + "\nreturn;\n\n"
         p[0].next = p[6].next                    
         global s
         s+=1
     else:
-        n = Node('FUNCTION_DECL3')
+        p[0] = Node('FUNCTION_DECL3')
         global global_scope, current_scope, errors
         if not (global_scope == current_scope):
             errors += 1
@@ -255,14 +186,7 @@ def p_FUNCTION_DECL2(p):
             if(not new_var):
                 errors += 1
                 print "Error : line", t.lexer.lineno,": Function", p[1], "declared multiple times."
-        n.add_child(Node("VOID"))
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(Node(p[3]))
-        n.add_child(p[4])
-        n.add_child(p[5])
-        n.add_child(p[6])
-        p[0] = n
+        
         p[0].code = "\n" + p[1] + "_begin:\n" + p[5].code + "\nreturn;\n\n"
         p[0].next = p[5].next
 def p_LIST_OF_PARAMETERS (p):
@@ -270,10 +194,7 @@ def p_LIST_OF_PARAMETERS (p):
                     | VARIABLE_TYPE IDENTIFIER
                     '''
     if(len(p)==3):
-        n = Node('PARAMETERS1')
-        n.add_child(p[1])
-        n.add_child(Node(p[2]))
-        p[0] = n
+        p[0] = Node('PARAMETERS1')
         global s
         s+=1
         p[0].code =  "_param"+ str(s) +" " + p[2]
@@ -282,12 +203,7 @@ def p_LIST_OF_PARAMETERS (p):
         global s
         s+=1
 
-        n = Node('PARAMETERS2')
-        n.add_child(p[1])
-        n.add_child(Node(p[2]))
-        n.add_child(Node(p[3]))
-        n.add_child(p[4])
-        p[0] = n
+        p[0] = Node('PARAMETERS2')
         p[0].code = "_param"+ str(s) +" " + p[2]  + " \n " + p[4].code             
  
 # def p_PARAMETER_TYPE (p):
@@ -321,10 +237,7 @@ def p_EXPRESSION_STATEMENT(p):
     ''' EXPRESSION_STATEMENT : EXPRESSION SEMICOLON
 
                         '''
-    n = Node('EXPRESSION_STATEMENT')
-    n.add_child(p[1])
-    n.add_child(Node(p[2][0]))
-    p[0] = n
+    p[0] = Node('EXPRESSION_STATEMENT')
     p[0].code = p[1].code                         
     p[0].next = p[1].next          
 
@@ -347,17 +260,7 @@ def p_FOR_LOOP(p):
                         '''                      
     if(len(p)==10):
                   
-        n = Node('FOR_LOOP1')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4][0]))
-        n.add_child(p[5])
-        n.add_child(Node(p[6][0]))
-        n.add_child(p[7])
-        n.add_child(Node(p[8]))
-        n.add_child(p[9])
-        p[0] = n
+        p[0] = Node('FOR_LOOP1')
         global labels
         labels += 1
         p[0].code = "\nlabel_" + str(labels) + ":\n"+ p[9].code + "\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
@@ -366,19 +269,7 @@ def p_FOR_LOOP(p):
         p[0].next = p[9].next
 
     elif(len(p)==12):
-        n = Node('FOR_LOOP2')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4][0]))
-        n.add_child(p[5])
-        n.add_child(Node(p[6][0]))
-        n.add_child(p[7])
-        n.add_child(Node(p[8]))
-        n.add_child(p[9])
-        n.add_child(p[10])
-        n.add_child(p[11])
-        p[0] = n
+        p[0] = Node('FOR_LOOP2')
         global labels
         labels += 1
         p[0].code = "\nlabel_" + str(labels) + ":\n"+ p[10].code + "\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
@@ -391,17 +282,7 @@ def p_FOR_LOOP2(p):
     '''FOR_LOOP :  FOR LEFTPAR EXPRESSION SEMICOLON EXPRESSION SEMICOLON EXPRESSION RIGHTPAR SEMICOLON                                  
                         '''                      
                           
-    n = Node('FOR_LOOP3')
-    n.add_child(Node(p[1]))
-    n.add_child(Node(p[2]))
-    n.add_child(p[3])
-    n.add_child(Node(p[4][0]))
-    n.add_child(p[5])
-    n.add_child(Node(p[6][0]))
-    n.add_child(p[7])
-    n.add_child(Node(p[8]))
-    n.add_child(Node(p[9][0]))
-    p[0] = n
+    p[0] = Node('FOR_LOOP3')
     global labels
     labels += 1
     p[0].code = "\nlabel_" + str(labels) + ":\n" + p[7].code + "\ngoto label_" + str(labels+1) + ";\n"
@@ -416,13 +297,7 @@ def p_WHILE_LOOP(p):
                         | WHILE LEFTPAR SIMPLE_EXPRESSION RIGHTPAR SEMICOLON
                         '''
     if(len(p)== 6 and p[5]!='SEMICOLON'):
-        n = Node('WHILE_LOOP1')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4]))
-        n.add_child(p[5][0])
-        p[0] = n
+        p[0] = Node('WHILE_LOOP1')
         global labels
         labels += 1
         p[0].code = "\nlabel_" + str(labels) + ":\n" + p[5].code + "\ngoto label_" + str(labels+1) + ";\n"
@@ -431,15 +306,7 @@ def p_WHILE_LOOP(p):
         p[0].next = p[5].next
 
     elif(len(p)== 8):
-        n = Node('WHILE_LOOP2')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4]))
-        n.add_child(p[5])
-        n.add_child(p[6])
-        n.add_child(p[7])
-        p[0] = n
+        p[0] = Node('WHILE_LOOP2')
         global labels
         labels += 1
         p[0].code = "label_" + str(labels) + ":\n" + p[6].code + "\ngoto label_" + str(labels+1) + ";\n"
@@ -447,13 +314,7 @@ def p_WHILE_LOOP(p):
         p[0].code += "\nlabel_" + str(labels) + ":\nif" + p[3].code + "\ngoto label_" + str(labels-1) + ";\ngoto " + str(p[6].next) + ";\n" 
         p[0].next = p[6].next
     else:                        
-        n = Node('WHILE_LOOP3')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4]))
-        n.add_child(Node(p[5]))
-        p[0] = n
+        p[0] = Node('WHILE_LOOP3')
         global labels
         labels += 1
         p[0].code = "\nlabel_" + str(labels) + ":\nif" + p[3].code + "\ngoto label_" + str(labels) + ";\ngoto " + str(p[3].next) + ";\n" 
@@ -474,10 +335,7 @@ def p_ENUM_VARIABLE_TYPE(p):
 def p_VARIABLE_DECLARATION(p):
     ''' VARIABLE_DECLARATION : VARIABLE_TYPE LISTOF_VAR_DECLARATIONS SEMICOLON
         '''
-    n = Node('VARIABLE_DECLARATION')    
-    n.add_child(p[1])
-    n.add_child(p[2])
-    n.add_child(Node(p[3]))
+    p[0] = Node('VARIABLE_DECLARATION')    
     global current_scope, offset
     for i in current_scope.variables:
         if(current_scope.variables[i]['type']=='NA'):
@@ -486,7 +344,6 @@ def p_VARIABLE_DECLARATION(p):
             current_scope.variables[i]['offset'] = offset
             if not current_scope.variables[i]['size']==-1:
                 offset += type_size[p[1].data]
-    p[0] = n
     p[0].code =  p[2].code
     p[0].next =  p[2].next    
 
@@ -496,16 +353,12 @@ def p_LISTOF_VAR_DECLARATIONS(p):
                     | VAR_DECLARATION_ID
                     '''
     if(len(p)==4):
-        n = Node('LISTOF_VAR_DECLARATIONS')
+        p[0] = Node('LISTOF_VAR_DECLARATIONS')
         global current_scope, errors
         new_var = current_scope.add_variable(p[1], 'NA')
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        p[0] = n
         p[0].code = p[3].code
         p[0].next = p[3].next    
     elif(len(p)==2):
@@ -519,19 +372,12 @@ def p_LISTOF_VAR_DECLARATIONS2(p):
                     | VAR_DECLARATION_ID EQUALS EXPRESSION
                     '''
     if(len(p)==6):
-        n = Node('LISTOF_VAR_DECLARATIONS2')
+        p[0] = Node('LISTOF_VAR_DECLARATIONS2')
         global current_scope, errors
         new_var = current_scope.add_variable(p[1], 'NA')
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        x = Node(p[2])
-        x.add_child(Node(p[1]))
-        x.add_child(p[3])
-        n.add_child(x)
-        n.add_child(Node(p[4]))
-        n.add_child(p[5])
-        p[0] = n
         print 'solanki1 ' , p[1].place
 
         p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].place+ " = _x1;\n" + p[5].code + "\n"
@@ -542,10 +388,7 @@ def p_LISTOF_VAR_DECLARATIONS2(p):
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1].place, "declared multiple times in same scope."
-        n = Node(p[2])
-        n.add_child(Node(p[1]))
-        n.add_child(p[3])
-        p[0] = n
+        p[0] = Node(p[2])
         print 'solanki ' , p[1].place
         p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].place+ " = _x1;\n"
         p[0].next = p[3].next
@@ -573,17 +416,12 @@ def p_VAR_DECLARATION_ID(p):
 
         #print p[1]
     elif(len(p) == 5):
-        n = Node('VAR_DECLARATION_ID2')
+        p[0] = Node('VAR_DECLARATION_ID2')
         global current_scope, errors
         new_var = current_scope.add_variable(p[1], 'NA', p[3].data)
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4]))
-        p[0] = n
         global mass
         mass += 1
         new_var = "_t" + str(mass)
@@ -593,7 +431,7 @@ def p_VAR_DECLARATION_ID(p):
 
 # DYNAMIC ARRAY NOT SUPPORTED
     else:
-        n = Node('VAR_DECLARATION_ID3')
+        p[0] = Node('VAR_DECLARATION_ID3')
 
         # elif(p[4]=='LEFTBRACKET'):      #a[1][1]  [1]a[2] [1][2]a
 
@@ -612,7 +450,8 @@ def p_VARIABLE_TYPE (p):
                       '''
     p[0] = Node(p[1])
     p[0].code = ''
-    if(not (p[0]== 'INT' or p[0] =='FLOAT') ):
+
+    if(not (p[1]== 'INT' or p[1] =='FLOAT') ):
         p[0].place = p[1]    
 
 
@@ -621,37 +460,24 @@ def p_RETURN_STATEMENT(p):
                     | RETURN SEMICOLON
                     '''
     if(len(p)==3):                    
-        n = Node('RETURN_STATEMENT1')    
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2][0]))
-        p[0] = n
+        p[0] = Node('RETURN_STATEMENT1')    
         p[0].code = 'return ' + ";\n"                    
     else:
-        n = Node('RETURN_STATEMENT2')
-        n.add_child(Node(p[1]))
-        n.add_child(p[2])
-        n.add_child(Node(p[3][0]))
-        p[0] = n
+        p[0] = Node('RETURN_STATEMENT2')
         p[0].code = p[2].code + "\n_x1 = " + p[2].place + ";\nreturn _x1;\n"
         p[0].next = p[2].next   
 
 def p_BREAK_STATEMENT(p):
     ''' BREAK_STATEMENT : BREAK SEMICOLON
                     '''
-    n = Node('BREAK_STATEMENT')
-    n.add_child(Node(p[1]))
-    n.add_child(Node(p[2][0]))
-    p[0] = n
+    p[0] = Node('BREAK_STATEMENT')
     p[0].code = 'break ' + ";\n"    
 
-# def p_CONTINUE_STATEMENT(p):
-#     ''' CONTINUE_STATEMENT : CONTINUE_STATEMENT SEMICOLON
-#                     '''
-#     n = Node('CONTINUE_STATEMENT')
-#     n.add_child(Node(p[1]))
-#     n.add_child(Node(p[2]))
-#     p[0] = n
-#     p[0].code = 'continue ' + ";\n"    
+def p_CONTINUE_STATEMENT(p):
+    ''' CONTINUE_STATEMENT : CONTINUE SEMICOLON
+                    '''
+    p[0] = Node('CONTINUE_STATEMENT')
+    p[0].code = 'continue ' + ";\n"    
 
 
 def p_EXPRESSION (p):
@@ -669,13 +495,12 @@ def p_EXPRESSION (p):
         p[0].next = p[1].next        
 
     elif(len(p)==4):
-        n = Node(p[2][0])
-        n.add_child(p[1])
-        n.add_child(p[3])
-        p[0] = n
-        if(p[2]=='EQUALS'):
+        p[0] = Node(p[2][0])
+        if(p[2][1]=='EQUALS'):
+            # print 'sasadadafaaf'
+            
             # p[0].code = p[1].code + p[3].code + "\n" + p[1].place + " = " + p[3].place + ";\n"
-            p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1]+ " = _x1;\n"
+            p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].place+ " = _x1;\n"
             p[0].place = p[1].place
         else:
             global mass
@@ -688,37 +513,19 @@ def p_EXPRESSION (p):
 
     # elif(len(p)==3):
     #     if(p[2] == 'PLUSPLUS'):
-    #         n = NODE('EXPRESSION')
-    #         n.add_child(p[1])
-    #         n1 = Node(p[2])
-    #         n1.code = " + 1;\n"
-    #         n1.place = ' - 1'
-    #         n.add_child(n1)
-
-    #         p[0] = n
+    #         p[0] = NODE('EXPRESSION')
     #         p[0].code = p[1] + " = " + p[1] + p[2].code
     #         p[0].place = p[1] + p[2].place
     #         p[0].next = p[2].next
 
     #     elif(p[2] == 'MINUSMINUS'):
-    #         n = NODE('EXPRESSION')
-    #         n.add_child(p[1])
-    #         n1 = Node(p[2])
-    #         n1.code = " - 1;\n"
-    #         n1.place = ' + 1'
-
-    #         n.add_child(n1)
-
-    #         p[0] = n
-    #         p[0].code = p[1] + " = " + p[1] + p[2].code
+    #         p[0] = NODE('EXPRESSION')
+   #          p[0].code = p[1] + " = " + p[1] + p[2].code
     #         p[0].place = p[1] + p[2].place
     #         p[0].next = p[2].next
     
     else:
-        n = Node(p[2])
-        n.add_child(p[1])
-        n.add_child(p[3])        
-        p[0] = n
+        p[0] = Node(p[2])
         global mass
         mass += 1
         new_var = "_t" + str(mass)
@@ -738,11 +545,8 @@ def p_SIMPLE_EXPRESSION (p):
         p[0].next = p[1].next        
         
     else:
-        if(p[2]=='AND'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+        if(p[2][1]=='AND'):
+            p[0] = Node(p[2])
             global labels, mass
             labels += 1
             mass += 1
@@ -755,10 +559,7 @@ def p_SIMPLE_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next    
         else:
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global labels, mass
             labels += 1
             mass += 1
@@ -787,10 +588,7 @@ def p_RELATIONAL_EXPRESSION (p):
     else:
         # print 'sahil22' , p[2]                       
         if(p[2][1]=='LESSER'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -800,10 +598,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].next = p[3].next
 
         elif(p[2][1]=='GREATER'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -813,10 +608,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].next = p[3].next
 
         elif(p[2][1]=='LESSER_EQUAL'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -826,10 +618,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].next = p[3].next
 
         elif(p[2][1]=='GREATER_EQUAL'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -838,10 +627,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].place = new_var
             p[0].next = p[3].next    
         elif(p[2][1]=='NOT_EQUAL'):
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -851,10 +637,7 @@ def p_RELATIONAL_EXPRESSION (p):
             p[0].next = p[3].next            
 
         elif(p[2][1]=='EQUAL_EQUAL'):        
-            n = Node(p[2])
-            n.add_child(p[1])
-            n.add_child(p[3])
-            p[0] = n
+            p[0] = Node(p[2])
             global mass
             mass += 1
             new_var = "_t" + str(mass)
@@ -877,23 +660,22 @@ def p_SUM_EXPRESSION(p):
         p[0].next = p[1].next
 
     else:                    
-        n = Node(p[2][0])
-        n.add_child(p[1])
-        n.add_child(p[3])
-        p[0] = n
+        p[0] = Node(p[2][0])
         global mass
         mass += 1
         new_var = "_t" + str(mass)
         p[0].code = p[1].code + "\n" + p[3].code + "\n_x1 = " + p[1].place + ";\n_x2 = " + p[3].place + ";\n"
-        if(p[2]=='PLUS'):
+        if(p[2][1]=='PLUS'):
             p[0].code += new_var + " = _x1 + _x2;\n"
-        elif(p[2]=='MINUS'):
+        elif(p[2][1]=='MINUS'):
+            print 'sahil mass ' , mass
+
             p[0].code += new_var + " = _x1 - _x2;\n"
-        elif(p[2]=='STAR'):
+        elif(p[2][1]=='STAR'):
             p[0].code += new_var + " = _x1 * _x2;\n"
-        elif(p[2]=='DIVIDE'):
+        elif(p[2][1]=='DIVIDE'):
             p[0].code += new_var + " = _x1 / _x2;\n"
-        elif(p[2]=='MOD'):
+        elif(p[2][1]=='MOD'):
             p[0].code += new_var + " = _x1 % _x2;\n"
         
         p[0].place = new_var
@@ -911,19 +693,13 @@ def p_UNARY_EXPRESSION(p):
         p[0].next = p[1].next
     else:
         if(p[1].code == " + 1;\n" or p[1].code == " - 1;\n"):
-            n = Node('UNARY_EXPRESSION1')
-            n.add_child(p[1])
-            n.add_child(Node(p[2]))
-            p[0] = n
+            p[0] = Node('UNARY_EXPRESSION1')
             p[0].code = p[2].code + " = " + p[2].code + p[1].code
             p[0].place = p[2]
             p[0].next = p[1].next
 
         elif(p[2].code == " + 1;\n" or p[2].code == " - 1;\n"):  
-            n = Node('UNARY_EXPRESSION2')
-            n.add_child(Node(p[1]))
-            n.add_child(p[2])
-            p[0] = n
+            p[0] = Node('UNARY_EXPRESSION2')
             p[0].code = p[1].code + " = " + p[1].code + p[2].code
             p[0].place = p[1].place + p[2].place
             p[0].next = p[2].next
@@ -964,12 +740,7 @@ def p_DATA_OBJECT(p):
         p[0].place = p[1][0]
 
     elif(len(p)==5): 
-        n = Node('DATA_OBJECT1')
-        n.add_child(Node(p[1]))
-        n.add_child(Node(p[2][0]))
-        n.add_child(p[3])
-        n.add_child(Node(p[4][0]))
-        p[0] = n
+        p[0] = Node('DATA_OBJECT1')
         global mass
         mass += 1
         new_var = "_t" + str(mass)
@@ -1056,7 +827,8 @@ def p_STR_CONST (p):
 def p_LEFTBRACES(p):
     ''' LEFTBRACES : LEFTBRACE
                     '''
-    p[0] = Node(p[1])
+    # print 'sasassasa' ,p[1]                    
+    p[0] = Node(p[1][0])
     p[0].code = ""
     global current_scope, tableux
     new_scope = Table(tableux)
@@ -1067,7 +839,7 @@ def p_LEFTBRACES(p):
 def p_RIGHTBRACES(p):
     ''' RIGHTBRACES : RIGHTBRACE
                     '''
-    p[0] = Node(p[1])
+    p[0] = Node(p[1][0])
     p[0].code = ""
     global current_scope
     current_scope = current_scope.parent
@@ -1082,7 +854,7 @@ logging.basicConfig(
 )
 
 parser = yacc.yacc()
-data =''' main(int c, int x, int k , int l) { int i , j=1,k=0 ; k = i+j; } '''
+data =''' main(int c, int x, int k , int l) { int i , j=1,k=0 ; k = i+j; k =  3 + 5  - 8 * 4 / 8%6; } '''
 data1 = ' int i = 2+4 ; '
 
 print parser.parse(data, debug=logging.getLogger())
