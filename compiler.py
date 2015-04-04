@@ -3,7 +3,6 @@ import time
 import dlex
 import ply.yacc as yacc
 tokens = dlex.tokens
-#from SymbolTable import *
 
 
 # precedence = (
@@ -145,6 +144,7 @@ def p_STATEMENT(p):
 
 
 #----------------------------------------------------------------
+s = 0
 
 def p_FUNCTION_DECL(p):
     ''' FUNCTION_DECL : VARIABLE_TYPE IDENTIFIER LEFTPAR LIST_OF_PARAMETERS RIGHTPAR  LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES
@@ -176,8 +176,8 @@ def p_FUNCTION_DECL(p):
         n.add_child(p[8])
         p[0] = n
         # a = p[7].code
-        print 'sasds', p[4].code
-        p[0].code = "\n" + p[2] + "_begin: " + p[4].code + "\n" + p[4].code + "\n" + p[7].code + "\nreturn;\n\n"
+        # print 'sasds', p[4].code
+        p[0].code = "\n" + p[2] + "_begin: " + "\n" + p[4].code + "\n" + p[7].code + "\nreturn;\n\n"
         p[0].next = p[7].next        
 
     elif(len(p)==8):
@@ -213,6 +213,8 @@ def p_FUNCTION_DECL(p):
     else:
         i = 0
 
+    global s
+    s = 0
 
 def p_FUNCTION_DECL2(p):
     ''' FUNCTION_DECL :  IDENTIFIER LEFTPAR LIST_OF_PARAMETERS RIGHTPAR  LEFTBRACES LIST_OF_STATEMENTS RIGHTBRACES
@@ -238,9 +240,10 @@ def p_FUNCTION_DECL2(p):
         n.add_child(p[6])
         n.add_child(p[7])
         p[0] = n
-        p[0].code = "\n" + p[1] + "_begin: " + p[3].code + "\n" + p[6].code + "\nreturn;\n\n"
+        p[0].code = "\n" + p[1] + "_begin:\n " + p[3].code + "\n" + p[6].code + "\nreturn;\n\n"
         p[0].next = p[6].next                    
-
+        global s
+        s+=1
     else:
         n = Node('FUNCTION_DECL3')
         global global_scope, current_scope, errors
@@ -271,17 +274,22 @@ def p_LIST_OF_PARAMETERS (p):
         n.add_child(p[1])
         n.add_child(Node(p[2]))
         p[0] = n
-        p[0].code = p[1].place + " " + p[2]
+        global s
+        s+=1
+        p[0].code =  "_param"+ str(s) +" " + p[2]
 
     elif(len(p)==5):
+        global s
+        s+=1
+
         n = Node('PARAMETERS2')
         n.add_child(p[1])
         n.add_child(Node(p[2]))
         n.add_child(Node(p[3]))
         n.add_child(p[4])
         p[0] = n
-        p[0].code = "(" + p[1].place + p[2] + "," + p[4].code + ")"            
-    
+        p[0].code = "_param"+ str(s) +" " + p[2]  + " \n " + p[4].code             
+ 
 # def p_PARAMETER_TYPE (p):
 #     ''' PARAMETER_TYPE : VARIABLE_TYPE IDENTIFIER
 #                         | VARIABLE_TYPE LEFTBRACKET RIGHTBRACKET IDENTIFIER
@@ -317,7 +325,7 @@ def p_EXPRESSION_STATEMENT(p):
     n.add_child(p[1])
     n.add_child(Node(p[2][0]))
     p[0] = n
-    p[0].code = p[1].code                        
+    p[0].code = p[1].code                         
     p[0].next = p[1].next          
 
 
@@ -482,9 +490,10 @@ def p_VARIABLE_DECLARATION(p):
     p[0].code =  p[2].code
     p[0].next =  p[2].next    
 
+
 def p_LISTOF_VAR_DECLARATIONS(p):
-    '''LISTOF_VAR_DECLARATIONS : VAR_INITIALIZE COMMA LISTOF_VAR_DECLARATIONS 
-                    | VAR_INITIALIZE
+    ''' LISTOF_VAR_DECLARATIONS : VAR_DECLARATION_ID COMMA LISTOF_VAR_DECLARATIONS 
+                    | VAR_DECLARATION_ID
                     '''
     if(len(p)==4):
         n = Node('LISTOF_VAR_DECLARATIONS')
@@ -493,32 +502,53 @@ def p_LISTOF_VAR_DECLARATIONS(p):
         if(not new_var):
             errors += 1
             print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
-        n.add_child(p[1])
+        n.add_child(Node(p[1]))
         n.add_child(Node(p[2]))
         n.add_child(p[3])
         p[0] = n
         p[0].code = p[3].code
-        p[0].next =  p[3].next 
-    else:
+        p[0].next = p[3].next    
+    elif(len(p)==2):
         p[0] = p[1]
         p[0].code = p[1].code
         p[0].next = p[1].next
 
-def p_VAR_INITIALIZE(p):
-    '''VAR_INITIALIZE : VAR_DECLARATION_ID
-                            |  VAR_DECLARATION_ID EQUALS EXPRESSION 
-                            '''
-    if(len(p)==4):
-        n = Node(p[2][0])
-        n.add_child(p[1])
+def p_LISTOF_VAR_DECLARATIONS2(p):
+    ''' LISTOF_VAR_DECLARATIONS :                        
+                    | VAR_DECLARATION_ID EQUALS EXPRESSION COMMA LISTOF_VAR_DECLARATIONS
+                    | VAR_DECLARATION_ID EQUALS EXPRESSION
+                    '''
+    if(len(p)==6):
+        n = Node('LISTOF_VAR_DECLARATIONS2')
+        global current_scope, errors
+        new_var = current_scope.add_variable(p[1], 'NA')
+        if(not new_var):
+            errors += 1
+            print "Error : line", t.lexer.lineno,": Variable", p[1], "declared multiple times in same scope."
+        x = Node(p[2])
+        x.add_child(Node(p[1]))
+        x.add_child(p[3])
+        n.add_child(x)
+        n.add_child(Node(p[4]))
+        n.add_child(p[5])
+        p[0] = n
+        print 'solanki1 ' , p[1].place
+
+        p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].place+ " = _x1;\n" + p[5].code + "\n"
+        p[0].next = p[3].next
+    elif(len(p)==4):
+        global current_scope, errors
+        new_var = current_scope.add_variable(p[1], 'NA')
+        if(not new_var):
+            errors += 1
+            print "Error : line", t.lexer.lineno,": Variable", p[1].place, "declared multiple times in same scope."
+        n = Node(p[2])
+        n.add_child(Node(p[1]))
         n.add_child(p[3])
         p[0] = n
-        p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].code+ " = _x1;\n"
+        print 'solanki ' , p[1].place
+        p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1].place+ " = _x1;\n"
         p[0].next = p[3].next
-    else:
-        p[0] = p[1]
-        p[0].code = p[1].code
-        p[0].next = p[1].next
 
 def p_VAR_DECLARATION_ID(p):
     ''' VAR_DECLARATION_ID : IDENTIFIER
@@ -644,7 +674,8 @@ def p_EXPRESSION (p):
         n.add_child(p[3])
         p[0] = n
         if(p[2]=='EQUALS'):
-            p[0].code = p[1].code + p[3].code + "\n" + p[1].place + " = " + p[3].place + ";\n"
+            # p[0].code = p[1].code + p[3].code + "\n" + p[1].place + " = " + p[3].place + ";\n"
+            p[0].code = p[3].code + "\n_x1 = " + p[3].place + ";\n" + p[1]+ " = _x1;\n"
             p[0].place = p[1].place
         else:
             global mass
@@ -1051,7 +1082,7 @@ logging.basicConfig(
 )
 
 parser = yacc.yacc()
-data =''' int main(int c, int x) { int i , j=1,k=0 ; k = i+j; } '''
+data =''' main(int c, int x, int k , int l) { int i , j=1,k=0 ; k = i+j; } '''
 data1 = ' int i = 2+4 ; '
 
 print parser.parse(data, debug=logging.getLogger())
